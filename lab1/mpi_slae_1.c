@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define N 10
+#define N 1000
 
 void SetMatrixPart(int *lineCounts, int *lineOffsets, int size, int processCount);
 void GenerateAChunks(double *AChunk, int lineCount, int lineSize, int processRank);
@@ -13,92 +13,78 @@ void GenerateB(double *b, int size);
 double CalcNorm(double *vector, int size);
 void CalcAxb(const double* AChunk, const double* x, const double* b, double* AxbBuff, int partSize, int partOffset);
 void CalcNextX(const double* Axb, const double* x, double* xBuff, double tau, int partSize, int partOffset);
-void PrintMatrix(double *a, int lines, int columns);
+void PrintMatrix(const double *a, int lines, int columns);
 
 int main(int argc, char **argv)
 {
     MPI_Init(&argc, &argv);
+
+    double e = 0.000001;
+    double tau = 0.001;
+    double accuracy = e + 1;
+    double bNorm;
+    double startTime;
+    double finishTime;
 
     int processRank;
     int processCount;
     MPI_Comm_size(MPI_COMM_WORLD, &processCount);
     MPI_Comm_rank(MPI_COMM_WORLD, &processRank);
     
-    // Initialize counts of lines in matrix parts and begin indexes of lines in matrix parts
     int *lineCounts = malloc(sizeof(int) * processCount);
     int *lineOffsets = malloc(sizeof(int) * processCount);
     SetMatrixPart(lineCounts, lineOffsets, N, processCount);
 
-    // Allocate and initialize parts of matrix A
-    double *AChunk = malloc(sizeof(double) * lineCounts[processRank] * N);  
-    GenerateAChunks(AChunk, lineCounts[processRank], N, lineOffsets[processRank]);
-
-    // Allocate and initialize vectors b, x 
     double *x = malloc(sizeof(double) * N);
     double *b = malloc(sizeof(double) * N);
+    double *AChunk = malloc(sizeof(double) * lineCounts[processRank] * N);  
+    double *Axb = NULL;
+    double *AxbBuff = malloc(sizeof(double) * lineCounts[processRank]);
+    double *xBuff = malloc(sizeof(double) * lineCounts[processRank]);
+
     if (processRank == 0)
     {
-        GenerateB(b, N);
         GenerateX(x, N);
+        GenerateB(b, N);
+        Axb = malloc(sizeof(double) * N);
     }
     MPI_Bcast(x, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(b, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    // Calculate second norm of vector b
-    double bNorm = CalcNorm(b, N);
+    GenerateAChunks(AChunk, lineCounts[processRank], N, lineOffsets[processRank]);
 
-    // Create vector Axb for process 0
-    double *Axb = NULL;
-    if (processRank == 0)
-        Axb = malloc(sizeof(double) * N);
-
-    // Create buffers
-    double *AxbBuff = malloc(sizeof(double) * N);
-    double *xBuff = malloc(sizeof(double) * N);
-
-    // Create some parameters
-    double e = 0.000001;
-    double tau = 0.001;
-    double accuracy = e + 1;
-
-    // Start counting time
-    double startTime = MPI_Wtime();
+    bNorm = CalcNorm(b, N);
+    startTime = MPI_Wtime();
 
     while (accuracy > e)
     {
-        // Calculate parts of vector A*x-b
         CalcAxb(AChunk, x, b, AxbBuff, lineCounts[processRank], lineOffsets[processRank]);
-        MPI_Gatherv(AxbBuff + lineOffsets[processRank], lineCounts[processRank], MPI_DOUBLE,
+        MPI_Gatherv(AxbBuff, lineCounts[processRank], MPI_DOUBLE,
                     Axb, lineCounts, lineOffsets, MPI_DOUBLE, 
                     0, MPI_COMM_WORLD);
-
-        // Calculate next vector x          
+  
         CalcNextX(AxbBuff, x, xBuff, tau, lineCounts[processRank], lineOffsets[processRank]);
-        MPI_Allgatherv(xBuff + lineOffsets[processRank], lineCounts[processRank], MPI_DOUBLE,
+        MPI_Allgatherv(xBuff, lineCounts[processRank], MPI_DOUBLE,
                        x, lineCounts, lineOffsets, MPI_DOUBLE, MPI_COMM_WORLD);
 
-        // Update accuracy and broadcasts accuracy to all processes
         if (processRank == 0)
             accuracy = CalcNorm(Axb, N) / bNorm;
         MPI_Bcast(&accuracy, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     }
 
-    // Finish counting time
-    double finishTime = MPI_Wtime();
+    finishTime = MPI_Wtime();
 
-    // Print result
     if (processRank == 0)
     {
         printf("Norm: %lf\n", pow(CalcNorm(x, N), 2));
         printf("Time: %lf sec\n", finishTime - startTime);
     }
 
-    // Free up memory
     free(lineCounts);
     free(lineOffsets);
-    free(AChunk);
     free(x);
     free(b);
+    free(AChunk);
     free(AxbBuff);
     free(xBuff);
 
@@ -125,7 +111,7 @@ void GenerateX(double *x, int size)
 {
     srand(time(NULL));
     for (int i = 0; i < size; i++)
-        x[i] = ((double) rand() / RAND_MAX) * 100;
+        x[i] = ((double) rand() / RAND_MAX) * rand();
 }
 
 void GenerateB(double *b, int size)
@@ -162,19 +148,19 @@ void CalcAxb(const double* AChunk, const double* x, const double* b, double* Axb
 {
     for (int i = 0; i < partSize; ++i)
     {
-        AxbBuff[partOffset + i] = -b[partOffset + i];
+        AxbBuff[i] = -b[partOffset + i];
         for (int j = 0; j < N; ++j)
-            AxbBuff[partOffset + i] += AChunk[i * N + j] * x[j];
+            AxbBuff[i] += AChunk[i * N + j] * x[j];
     }
 }
 
 void CalcNextX(const double* AxbBuff, const double* x, double* xBuff, double tau, int partSize, int partOffset) 
 {
     for (int i = 0; i < partSize; ++i)
-        xBuff[partOffset + i] = x[partOffset + i] - tau * AxbBuff[partOffset + i];
+        xBuff[i] = x[partOffset + i] - tau * AxbBuff[i];
 }
 
-void PrintMatrix(double *a, int lines, int columns)
+void PrintMatrix(const double *a, int lines, int columns)
 {
     for (int i = 0; i < lines; i++)
     {
