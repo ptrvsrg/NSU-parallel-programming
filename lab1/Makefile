@@ -7,6 +7,4 @@ build: $(name).c
 
 run: build $(name)
 	mpiexec -n $(n) ./$(name)
-
-clean:
 	rm -rf $(name)
