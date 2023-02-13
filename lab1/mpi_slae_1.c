@@ -2,9 +2,8 @@
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
-#define N 1000
+#define N 5000
 
 void SetMatrixPart(int *lineCounts, int *lineOffsets, int size, int processCount);
 void GenerateAChunks(double *AChunk, int lineCount, int lineSize, int processRank);
@@ -19,8 +18,8 @@ int main(int argc, char **argv)
 {
     MPI_Init(&argc, &argv);
 
-    double e = 0.000001;
-    double tau = 0.001;
+    double e = 1E-7;
+    double tau = 1E-5;
     double accuracy = e + 1;
     double bNorm;
     double startTime;
@@ -109,9 +108,8 @@ void GenerateAChunks(double *AChunk, int lineCount, int lineSize, int lineIndex)
 
 void GenerateX(double *x, int size)
 {
-    srand(time(NULL));
     for (int i = 0; i < size; i++)
-        x[i] = ((double) rand() / RAND_MAX) * rand();
+        x[i] = 0;
 }
 
 void GenerateB(double *b, int size)
