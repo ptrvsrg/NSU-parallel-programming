@@ -13,9 +13,10 @@ void GenerateAChunk(double *AChunk, int lineCount, int lineSize, int processRank
 void GenerateXChunk(double *xChunk, int size);
 void GenerateBChunk(double *bChunk, int size);
 double CalcNormSquare(double *vector, int size);
-void CalcAxb(const double *AChunk, const double *x, const double *bChunk, 
-             double *AxbChunk, int chunkSize);
+void CalcAxb(const double *AChunk, const double *xChunk, const double *bChunk, double *recvXChunk, 
+             double *AxbChunk, int *lineCounts, int *lineOffsets, int processRank, int processCount);
 void CalcNextX(const double *Axb, double *xChunk, double tau, int chunkSize);
+void CopyMatrix(double *dest, const double *src, int lines, int columns);
 // void PrintMatrix(const double *a, int lines, int columns);
 
 int main(int argc, char **argv)
@@ -47,7 +48,7 @@ int main(int argc, char **argv)
         bNorm = sqrt(bNorm);
 
     double *AxbChunk = malloc(sizeof(double) * lineCounts[processRank]);
-    double *x = malloc(sizeof(double) * N);
+    double *recvXChunk = malloc(sizeof(double) * lineCounts[0]);
     double accuracy = EPSILON + 1;
     int iterationCount = 0;
     double startTime = MPI_Wtime();
@@ -55,15 +56,15 @@ int main(int argc, char **argv)
 
     while (accuracy > EPSILON && iterationCount < MAX_ITERATION_COUNT)
     {
-        MPI_Allgatherv(xChunk, lineCounts[processRank], MPI_DOUBLE,
-                       x, lineCounts, lineOffsets, MPI_DOUBLE, MPI_COMM_WORLD);
-        CalcAxb(AChunk, x, bChunk, AxbChunk, lineCounts[processRank]);
+        CopyMatrix(recvXChunk, xChunk, lineCounts[processRank], 1);
+        CalcAxb(AChunk, xChunk, bChunk, recvXChunk, AxbChunk, 
+                lineCounts, lineOffsets, processRank, processCount);
 
         CalcNextX(AxbChunk, xChunk, TAU, lineCounts[processRank]);
 
         double AxbChunkNormSquare = CalcNormSquare(AxbChunk, lineCounts[processRank]);
-        MPI_Reduce(&AxbChunkNormSquare, &accuracy, 1, MPI_DOUBLE,
-                   MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(&AxbChunkNormSquare, &accuracy, 1, 
+                   MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         if (processRank == 0)
             accuracy = sqrt(accuracy) / bNorm;
         MPI_Bcast(&accuracy, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -72,9 +73,6 @@ int main(int argc, char **argv)
     }
 
     finishTime = MPI_Wtime();
-
-    PrintMatrix(xChunk, 1, lineCounts[processRank]);
-    MPI_Barrier(MPI_COMM_WORLD);
 
     double xChunkNorm = CalcNormSquare(xChunk, lineCounts[processRank]);
     double xNorm;
@@ -97,7 +95,6 @@ int main(int argc, char **argv)
     free(bChunk);
     free(AChunk);
     free(AxbChunk);
-    free(x);
 
     MPI_Finalize();
 
@@ -151,14 +148,26 @@ double CalcNormSquare(double *vector, int size)
     return secondNormSquare;
 }
 
-void CalcAxb(const double *AChunk, const double *x, const double *bChunk, 
-             double *AxbChunk, int chunkSize)
+void CalcAxb(const double *AChunk, const double *xChunk, const double *bChunk, double *recvXChunk, 
+             double *AxbChunk, int *lineCounts, int *lineOffsets, int processRank, int processCount)
 {
-    for (int i = 0; i < chunkSize; ++i)
+    int srcRank = (processRank + processCount - 1) % processCount;
+    int destRank = (processRank + 1) % processCount;
+
+    for (int i = 0; i < processCount; ++i)
     {
-        AxbChunk[i] = -bChunk[i];
-        for (int j = 0; j < N; ++j)
-            AxbChunk[i] += AChunk[i * N + j] * x[j];
+        int currentRank = (processRank + i) % processCount;
+        for (int j = 0; j < lineCounts[processRank]; ++j)
+        {
+            if (i == 0)
+                AxbChunk[j] = -bChunk[j];
+            for (int k = 0; k < lineCounts[currentRank]; ++k)
+                AxbChunk[j] += AChunk[j * N + lineOffsets[currentRank] + k] * recvXChunk[k];
+        }
+
+        if (i != processCount - 1)
+            MPI_Sendrecv_replace(recvXChunk, lineCounts[0], MPI_DOUBLE, destRank, processRank, 
+                                 srcRank, srcRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 }
 
@@ -166,6 +175,13 @@ void CalcNextX(const double *AxbChunk, double *xChunk, double tau, int chunkSize
 {
     for (int i = 0; i < chunkSize; ++i)
         xChunk[i] -= tau * AxbChunk[i];
+}
+
+void CopyMatrix(double *dest, const double *src, int lines, int columns)
+{
+    for (int i = 0; i < lines; i++)
+        for (int j = 0; j < columns; j++)
+            dest[i * columns + j] = src[i * columns + j];
 }
 
 // void PrintMatrix(const double *a, int lines, int columns)
@@ -176,38 +192,5 @@ void CalcNextX(const double *AxbChunk, double *xChunk, double tau, int chunkSize
 //             printf("%lf ", a[i * columns + j]);
 
 //         printf("\n");
-//     }
-// }
-
-// void CalcAxb(const double *AChunk, const double *x, const double *bChunk, 
-//              double *AxbChunk, int chunkSize)
-// {
-//     for (int i = 0; i < lineCounts[processRank]; ++i)
-//     {
-//         AxbChunk[i] = -bChunk[i];
-
-//         for (int j = 0; j < lineCounts[processRank]; ++j)
-//             AxbChunk[i] += AChunk[i * N + lineOffsets[processRank] + j] * xChunk[j];
-//     }
-
-//     int srcRank = (processRank + processCount - 1) % processCount;
-//     int destRank = (processRank + 1) % processCount;
-
-//     for (int i = 0; i < processCount - 1; ++i)
-//     {
-//         MPI_Sendrecv(xChunk, lineCounts[processRank], MPI_DOUBLE, destRank, 0,
-//                      recvXChunk, lineCounts[srcRank], MPI_DOUBLE, srcRank, 0,
-//                      MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-//         for (int j = 0; j < lineCounts[processRank]; ++j)
-//         {
-//             AxbChunk[j] = -bChunk[j];
-
-//             for (int k = 0; k < lineCounts[srcRank]; ++k)
-//                 AxbChunk[j] += AChunk[j * N + lineOffsets[srcRank] + k] * recvXChunk[k];
-//         }
-
-//         srcRank = (srcRank + processCount - 1) % processCount;
-//         destRank = (destRank + 1) % processCount;
 //     }
 // }
