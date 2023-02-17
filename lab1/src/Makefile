@@ -1,10 +1,12 @@
 n=1
 
-all: run
+all: run clean
 
-build: $(name).c
-	mpicc -o $(name) $(name).c -lm -Wall
+build: mpi_slae_$(version).c
+	mpicc -o mpi_slae_$(version) mpi_slae_$(version).c -lm -Wall
 
-run: build $(name)
-	mpiexec -n $(n) ./$(name)
-	rm -rf $(name)
+run: build mpi_slae_$(version)
+	mpiexec -n $(n) ./mpi_slae_$(version)
+
+clean:
+	rm -rf mpi_slae_$(version)
