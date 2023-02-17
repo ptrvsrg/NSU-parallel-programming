@@ -36,13 +36,8 @@ int main(int argc, char **argv)
     double *x = malloc(sizeof(double) * N);
     double *b = malloc(sizeof(double) * N);
     GenerateAChunks(AChunk, lineCounts[processRank], N, lineOffsets[processRank]);
-    if (processRank == 0)
-    {
-        GenerateX(x, N);
-        GenerateB(b, N);
-    }
-    MPI_Bcast(x, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(b, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    GenerateX(x, N);
+    GenerateB(b, N);
 
     double bNorm;
     if (processRank == 0)
