@@ -60,7 +60,7 @@ int main(int argc, char **argv)
     
     start_time = MPI_Wtime();
 
-    for (iter_count; accuracy > EPSILON && iter_count < MAX_ITERATION_COUNT; ++iter_count)
+    for (iter_count = 0; accuracy > EPSILON && iter_count < MAX_ITERATION_COUNT; ++iter_count)
     {
         calc_Axb(A_chunk, x, b, Axb_chunk, 
                  line_counts[process_rank], line_offsets[process_rank]);
