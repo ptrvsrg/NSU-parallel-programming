@@ -8,48 +8,49 @@
 #define TAU 1E-5
 #define MAX_ITERATION_COUNT 1000000
 
-void GenerateA(double *A, int size);
-void GenerateX(double *x, int size);
-void GenerateB(double *b, int size);
-double CalcNormSquare(const double *vector, int size);
-void CalcAxb(const double* A, const double* x, const double* b, double* Axb, int size);
-void CalcNextX(const double* Axb, double* x, double tau, int size);
-// void PrintMatrix(const double *a, int lines, int columns);
+void generate_A(double* A, int size);
+void generate_x(double* x, int size);
+void generate_b(double* b, int size);
+double calc_norm_square(const double* vector, int size);
+void calc_Axb(const double* A, const double* x, const double* b, double* Axb, int size);
+void calc_next_x(const double* Axb, double* x, double tau, int size);
+// void print_matrix(const double* a, int lines, int columns);
 
 int main(int argc, char **argv)
 {
-    double *A = malloc(sizeof(double) * N * N);
-    double *x = malloc(sizeof(double) * N);
-    double *b = malloc(sizeof(double) * N);
-    GenerateA(A, N);
-    GenerateX(x, N);
-    GenerateB(b, N);
-
-    double bNorm = sqrt(CalcNormSquare(b, N));
-
-    double *Axb = malloc(sizeof(double) * N);
+    int iter_count;
     double accuracy = EPSILON + 1;
-    int iterationCount = 0;
-    struct timespec startTime;
-    struct timespec finishTime;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &startTime);
+    double b_norm;
+    struct timespec start_time;
+    struct timespec finish_time;
+    double* A = malloc(sizeof(double) * N * N);
+    double* x = malloc(sizeof(double) * N);
+    double* b = malloc(sizeof(double) * N);
+    double* Axb = malloc(sizeof(double) * N);
+    
+    generate_A(A, N);
+    generate_x(x, N);
+    generate_b(b, N);
 
-    while (accuracy > EPSILON && iterationCount < MAX_ITERATION_COUNT)
+    b_norm = sqrt(calc_norm_square(b, N));
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &start_time);
+
+    for (iter_count = 0; accuracy > EPSILON && iter_count < MAX_ITERATION_COUNT; ++iter_count)
     {
-        CalcAxb(A, x, b, Axb, N);
-        CalcNextX(Axb, x, TAU, N);
-        accuracy = sqrt(CalcNormSquare(Axb, N)) / bNorm;
-        ++iterationCount;
+        calc_Axb(A, x, b, Axb, N);
+        calc_next_x(Axb, x, TAU, N);
+        accuracy = sqrt(calc_norm_square(Axb, N)) / b_norm;
     }
 
-    clock_gettime(CLOCK_MONOTONIC_RAW, &finishTime);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &finish_time);
 
-    if (iterationCount == MAX_ITERATION_COUNT)
+    if (iter_count == MAX_ITERATION_COUNT)
         printf("Too many iterations\n");
     else
     {
-        printf("Norm: %lf\n", sqrt(CalcNormSquare(x, N)));
-        printf("Time: %lf sec\n", finishTime.tv_sec - startTime.tv_sec + 1E-09 * (finishTime.tv_nsec - startTime.tv_nsec));
+        printf("Norm: %lf\n", sqrt(calc_norm_square(x, N)));
+        printf("Time: %lf sec\n", finish_time.tv_sec - start_time.tv_sec + 1E-09 * (finish_time.tv_nsec - start_time.tv_nsec));
     }
 
     free(A);
@@ -60,7 +61,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void GenerateA(double *A, int size)
+void generate_A(double* A, int size)
 {
     for (int i = 0; i < size; i++)
     {
@@ -71,28 +72,28 @@ void GenerateA(double *A, int size)
     }
 }
 
-void GenerateX(double *x, int size)
+void generate_x(double* x, int size)
 {
     for (int i = 0; i < size; i++)
         x[i] = 0;
 }
 
-void GenerateB(double *b, int size)
+void generate_b(double* b, int size)
 {
     for (int i = 0; i < size; i++)
         b[i] = N + 1;
 }
 
-double CalcNormSquare(const double *vector, int size)
+double calc_norm_square(const double* vector, int size)
 {
-    double secondNormSquare = 0.0;
+    double norm_square = 0.0;
     for (int i = 0; i < size; ++i)
-        secondNormSquare += vector[i] * vector[i];
+        norm_square += vector[i] * vector[i];
 
-    return secondNormSquare;
+    return norm_square;
 }
 
-void CalcAxb(const double* A, const double* x, const double* b, double* Axb, int size) 
+void calc_Axb(const double* A, const double* x, const double* b, double* Axb, int size) 
 {
     for (int i = 0; i < size; ++i)
     {
@@ -102,13 +103,13 @@ void CalcAxb(const double* A, const double* x, const double* b, double* Axb, int
     }
 }
 
-void CalcNextX(const double* Axb, double* x, double tau, int size) 
+void calc_next_x(const double* Axb, double* x, double tau, int size) 
 {
     for (int i = 0; i < size; ++i)
         x[i] -= tau * Axb[i];
 }
 
-// void PrintMatrix(const double *a, int lines, int columns)
+// void print_matrix(const double* a, int lines, int columns)
 // {
 //     for (int i = 0; i < lines; i++)
 //     {
