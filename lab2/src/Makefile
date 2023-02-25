@@ -2,11 +2,11 @@ n=1
 
 all: run clean
 
-build: $(name).c
-	gcc -o $(name) $(name).c -lm -lrt -Wall
+build: openmp_slae_$(version).c
+	gcc -fopenmp -o openmp_slae_$(version) openmp_slae_$(version).c -lm -Wall
 
-run: build $(name)
-	./$(name)
+run: build openmp_slae_$(version)
+	OMP_NUM_THREADS=$(n) ./openmp_slae_$(version)
 
 clean:
-	rm -rf $(name)
+	rm -rf openmp_slae_$(version)
