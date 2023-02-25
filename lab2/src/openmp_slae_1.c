@@ -1,7 +1,7 @@
 #include <math.h>
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 #define N 5000
 #define EPSILON 1E-7
@@ -21,8 +21,8 @@ int main(int argc, char **argv)
     int iter_count;
     double accuracy = EPSILON + 1;
     double b_norm;
-    struct timespec start_time;
-    struct timespec finish_time;
+    double start_time;
+    double finish_time;
     double* A = malloc(sizeof(double) * N * N);
     double* x = malloc(sizeof(double) * N);
     double* b = malloc(sizeof(double) * N);
@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 
     b_norm = sqrt(calc_norm_square(b, N));
 
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start_time);
+    start_time = omp_get_wtime();
 
     for (iter_count = 0; accuracy > EPSILON && iter_count < MAX_ITERATION_COUNT; ++iter_count)
     {
@@ -43,14 +43,14 @@ int main(int argc, char **argv)
         accuracy = sqrt(calc_norm_square(Axb, N)) / b_norm;
     }
 
-    clock_gettime(CLOCK_MONOTONIC_RAW, &finish_time);
+    finish_time = omp_get_wtime();
 
     if (iter_count == MAX_ITERATION_COUNT)
         printf("Too many iterations\n");
     else
     {
         printf("Norm: %lf\n", sqrt(calc_norm_square(x, N)));
-        printf("Time: %lf sec\n", finish_time.tv_sec - start_time.tv_sec + 1E-09 * (finish_time.tv_nsec - start_time.tv_nsec));
+        printf("Time: %lf sec\n", finish_time - start_time);
     }
 
     free(A);
@@ -63,6 +63,7 @@ int main(int argc, char **argv)
 
 void generate_A(double* A, int size)
 {
+#pragma omp parallel for
     for (int i = 0; i < size; i++)
     {
         for (int j = 0; j < size; ++j)
@@ -74,12 +75,14 @@ void generate_A(double* A, int size)
 
 void generate_x(double* x, int size)
 {
+#pragma omp parallel for
     for (int i = 0; i < size; i++)
         x[i] = 0;
 }
 
 void generate_b(double* b, int size)
 {
+#pragma omp parallel for
     for (int i = 0; i < size; i++)
         b[i] = N + 1;
 }
@@ -87,6 +90,9 @@ void generate_b(double* b, int size)
 double calc_norm_square(const double* vector, int size)
 {
     double norm_square = 0.0;
+
+#pragma omp parallel for \
+                     reduction(+ : norm_square)
     for (int i = 0; i < size; ++i)
         norm_square += vector[i] * vector[i];
 
@@ -95,6 +101,7 @@ double calc_norm_square(const double* vector, int size)
 
 void calc_Axb(const double* A, const double* x, const double* b, double* Axb, int size) 
 {
+#pragma omp parallel for
     for (int i = 0; i < size; ++i)
     {
         Axb[i] = -b[i];
@@ -105,6 +112,7 @@ void calc_Axb(const double* A, const double* x, const double* b, double* Axb, in
 
 void calc_next_x(const double* Axb, double* x, double tau, int size) 
 {
+#pragma omp parallel for
     for (int i = 0; i < size; ++i)
         x[i] -= tau * Axb[i];
 }
