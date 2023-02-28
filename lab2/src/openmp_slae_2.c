@@ -50,18 +50,23 @@ int main(int argc, char **argv)
         {
             calc_Axb(A + line_offsets[thread_id] * N, x, b + line_offsets[thread_id], 
                      Axb + line_offsets[thread_id], line_counts[thread_id]);
+#pragma omp barrier
+
             calc_next_x(Axb + line_offsets[thread_id], x + line_offsets[thread_id], 
                         TAU, line_counts[thread_id]);
 
 #pragma omp single
+            accuracy = 0;
+
+#pragma omp atomic
+            accuracy += calc_norm_square(Axb + line_offsets[thread_id], line_counts[thread_id]);
+#pragma omp barrier
+
+#pragma omp single
             {
-                accuracy = 0;
+                accuracy = sqrt(accuracy) / b_norm;
                 ++iter_count;
             }
-
-            accuracy += sqrt(calc_norm_square(Axb + line_offsets[thread_id], line_counts[thread_id])) / b_norm;
-
-#pragma omp barrier
         }
     }
 
@@ -100,7 +105,6 @@ void set_matrix_part(int* line_counts, int* line_offsets, int size, int thread_c
 
 void generate_A(double* A, int size)
 {
-#pragma omp parallel for
     for (int i = 0; i < size; i++)
     {
         for (int j = 0; j < size; ++j)
@@ -112,14 +116,12 @@ void generate_A(double* A, int size)
 
 void generate_x(double* x, int size)
 {
-#pragma omp parallel for
     for (int i = 0; i < size; i++)
         x[i] = 0;
 }
 
 void generate_b(double* b, int size)
 {
-#pragma omp parallel for
     for (int i = 0; i < size; i++)
         b[i] = N + 1;
 }
@@ -127,9 +129,6 @@ void generate_b(double* b, int size)
 double calc_norm_square(const double* vector, int size)
 {
     double norm_square = 0.0;
-
-#pragma omp parallel for \
-                     reduction(+ : norm_square)
     for (int i = 0; i < size; ++i)
         norm_square += vector[i] * vector[i];
 
@@ -138,7 +137,6 @@ double calc_norm_square(const double* vector, int size)
 
 void calc_Axb(const double* A, const double* x, const double* b, double* Axb, int size) 
 {
-#pragma omp parallel for
     for (int i = 0; i < size; ++i)
     {
         Axb[i] = -b[i];
@@ -149,7 +147,6 @@ void calc_Axb(const double* A, const double* x, const double* b, double* Axb, in
 
 void calc_next_x(const double* Axb, double* x, double tau, int size) 
 {
-#pragma omp parallel for
     for (int i = 0; i < size; ++i)
         x[i] -= tau * Axb[i];
 }
