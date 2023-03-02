@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 #pragma omp parallel private(thread_id)
     {
         thread_id = omp_get_thread_num();
-        while (accuracy > EPSILON && iter_count < MAX_ITERATION_COUNT)
+        for (iter_count = 0; accuracy > EPSILON && iter_count < MAX_ITERATION_COUNT; ++iter_count)
         {
             calc_Axb(A + line_offsets[thread_id] * N, x, b + line_offsets[thread_id], 
                      Axb + line_offsets[thread_id], line_counts[thread_id]);
@@ -63,10 +63,7 @@ int main(int argc, char **argv)
 #pragma omp barrier
 
 #pragma omp single
-            {
-                accuracy = sqrt(accuracy) / b_norm;
-                ++iter_count;
-            }
+            accuracy = sqrt(accuracy) / b_norm;
         }
     }
 
