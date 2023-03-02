@@ -6,7 +6,7 @@
 #define N 5000
 #define EPSILON 1E-7
 #define TAU 1E-5
-#define MAX_ITERATION_COUNT 1000000
+#define MAX_ITERATION_COUNT 100000
 
 void set_matrix_part(int* line_counts, int* line_offsets, int size, int process_count);
 void generate_A_chunk(double* A_chunk, int line_count, int line_size, int process_rank);
@@ -16,7 +16,7 @@ double calc_norm_square(double* vector, int size);
 void calc_Axb(const double* A_chunk, const double* x_chunk, const double* b_chunk, double* recv_x_chunk, 
              double* Axb_chunk, int* line_counts, int* line_offsets, int process_rank, int process_count);
 void calc_next_x(const double* Axb, double* x_chunk, double tau, int chunk_size);
-void copy_matrix(double* dest, const double* src, int lines, int columns);
+void copy_vector(double* dest, const double* src, int size);
 // void print_matrix(const double* a, int lines, int columns);
 
 int main(int argc, char** argv)
@@ -26,11 +26,12 @@ int main(int argc, char** argv)
     int iter_count;
     double b_chunk_norm;
     double b_norm;
+    double x_chunk_norm;
+    double x_norm;
+    double Axb_chunk_norm_square;
     double accuracy = EPSILON + 1;
     double start_time;
     double finish_time;
-    double x_chunk_norm;
-    double x_norm;
     int* line_counts;
     int* line_offsets;
     double* x_chunk;
@@ -56,7 +57,6 @@ int main(int argc, char** argv)
     generate_A_chunk(A_chunk, line_counts[process_rank], N, line_offsets[process_rank]);
 
     b_chunk_norm = calc_norm_square(b_chunk, line_counts[process_rank]);
-    b_norm;
     MPI_Reduce(&b_chunk_norm, &b_norm, 1, MPI_DOUBLE,
                MPI_SUM, 0, MPI_COMM_WORLD);
     if (process_rank == 0)
@@ -69,8 +69,6 @@ int main(int argc, char** argv)
 
     for (iter_count = 0; accuracy > EPSILON && iter_count < MAX_ITERATION_COUNT; ++iter_count)
     {
-        double Axb_chunk_norm_square;
-        copy_matrix(recv_x_chunk, x_chunk, line_counts[process_rank], 1);
         calc_Axb(A_chunk, x_chunk, b_chunk, recv_x_chunk, Axb_chunk, 
                 line_counts, line_offsets, process_rank, process_count);
 
@@ -164,10 +162,13 @@ void calc_Axb(const double* A_chunk, const double* x_chunk, const double* b_chun
 {
     int src_rank = (process_rank + process_count - 1) % process_count;
     int dest_rank = (process_rank + 1) % process_count;
+    int current_rank;
+
+    copy_vector(recv_x_chunk, x_chunk, line_counts[process_rank]);
 
     for (int i = 0; i < process_count; ++i)
     {
-        int current_rank = (process_rank + i) % process_count;
+        current_rank = (process_rank + i) % process_count;
         for (int j = 0; j < line_counts[process_rank]; ++j)
         {
             if (i == 0)
@@ -188,11 +189,10 @@ void calc_next_x(const double* Axb_chunk, double* x_chunk, double tau, int chunk
         x_chunk[i] -= tau * Axb_chunk[i];
 }
 
-void copy_matrix(double* dest, const double* src, int lines, int columns)
+void copy_vector(double* dest, const double* src, int size)
 {
-    for (int i = 0; i < lines; i++)
-        for (int j = 0; j < columns; j++)
-            dest[i * columns + j] = src[i * columns + j];
+    for (int i = 0; i < size; i++)
+        dest[i] = src[i];
 }
 
 // void print_matrix(const double* a, int lines, int columns)
