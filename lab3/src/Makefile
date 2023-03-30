@@ -1,6 +1,6 @@
 np=1
 
-all: run clean
+all: clean run clean
 
 build: mpi_multiply.c
 	mpicc -o mpi_multiply mpi_multiply.c -lm -Wall
