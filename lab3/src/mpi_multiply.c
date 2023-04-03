@@ -15,6 +15,7 @@
 #define X 0
 #define Y 1
 
+void init_dims(int dims[DIMS_COUNT], int proc_count, int argc, char **argv);
 void init_communicators(const int dims[DIMS_COUNT], MPI_Comm *comm_grid, MPI_Comm *comm_rows, MPI_Comm *comm_columns);
 void generate_matrix(double *matrix, int column, int leading_row, int leading_column, bool onRows);
 void split_A(const double *A, double *A_block, int A_block_size, int n_2, int coords_y, MPI_Comm comm_rows, MPI_Comm comm_columns);
@@ -25,9 +26,9 @@ bool check_C(const double *C, int column, int leading_row, int leading_column, i
 
 int main(int argc, char **argv)
 {
-    int n_1 = 4000;
-    int n_2 = 2000;
-    int n_3 = 3000;
+    int n_1 = 2000;
+    int n_2 = 1500;
+    int n_3 = 2500;
     int proc_rank;
     int proc_count;
     int aligned_n1;
@@ -36,6 +37,8 @@ int main(int argc, char **argv)
     int B_block_size;
     int dims[DIMS_COUNT] = {};
     int coords[DIMS_COUNT] = {};
+    double start_time;
+    double finish_time;
     double *A = NULL;
     double *B = NULL;
     double *C = NULL;
@@ -48,11 +51,12 @@ int main(int argc, char **argv)
 
     MPI_Init(&argc, &argv);
 
+    start_time = MPI_Wtime();
+
     MPI_Comm_rank(MPI_COMM_WORLD, &proc_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &proc_count);
 
-    // Create division of processes in cartesian grid
-    MPI_Dims_create(proc_count, DIMS_COUNT, dims);
+    init_dims(dims, proc_count, argc, argv);
 
     init_communicators(dims, &comm_grid, &comm_rows, &comm_columns);
 
@@ -75,8 +79,6 @@ int main(int argc, char **argv)
         generate_matrix(B, aligned_n3, n_2, n_3, false);
     }
 
-    MPI_Barrier(comm_grid);
-
     A_block = malloc(sizeof(double) * A_block_size * n_2);
     B_block = malloc(sizeof(double) * B_block_size * n_2);
     C_block = malloc(sizeof(double) * A_block_size * B_block_size);
@@ -88,9 +90,12 @@ int main(int argc, char **argv)
 
     gather_C(C_block, C, A_block_size, B_block_size, aligned_n1, aligned_n3, proc_count, comm_grid);
 
+    finish_time = MPI_Wtime();
+
     if (coords[Y] == 0 && coords[X] == 0)
     {
         printf("Is matrix C correct? - %s\n", check_C(C, aligned_n3, n_1, n_3, n_2) ? "yes" : "no");
+        printf("Time: %lf\n", finish_time - start_time);
 
         free(A);
         free(B);
@@ -107,6 +112,25 @@ int main(int argc, char **argv)
     MPI_Finalize();
 
     return EXIT_SUCCESS;
+}
+
+/**
+ * @brief Initialize dimensions
+ * 
+ * @param dims 
+ * @param proc_count 
+ * @param argc 
+ * @param argv 
+ */
+void init_dims(int dims[DIMS_COUNT], int proc_count, int argc, char **argv)
+{
+    if (argc < 3)
+        MPI_Dims_create(proc_count, DIMS_COUNT, dims);
+    else
+    {
+        dims[X] = atoi(argv[1]);
+        dims[Y] = atoi(argv[2]);
+    }
 }
 
 /**
