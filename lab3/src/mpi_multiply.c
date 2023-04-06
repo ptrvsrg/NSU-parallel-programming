@@ -51,8 +51,6 @@ int main(int argc, char **argv)
 
     MPI_Init(&argc, &argv);
 
-    start_time = MPI_Wtime();
-
     MPI_Comm_rank(MPI_COMM_WORLD, &proc_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &proc_count);
 
@@ -78,6 +76,8 @@ int main(int argc, char **argv)
         generate_matrix(A, n_2, n_1, n_2, true);
         generate_matrix(B, aligned_n3, n_2, n_3, false);
     }
+
+    start_time = MPI_Wtime();
 
     A_block = malloc(sizeof(double) * A_block_size * n_2);
     B_block = malloc(sizeof(double) * B_block_size * n_2);
@@ -116,11 +116,11 @@ int main(int argc, char **argv)
 
 /**
  * @brief Initialize dimensions
- * 
- * @param dims 
- * @param proc_count 
- * @param argc 
- * @param argv 
+ *
+ * @param dims
+ * @param proc_count
+ * @param argc
+ * @param argv
  */
 void init_dims(int dims[DIMS_COUNT], int proc_count, int argc, char **argv)
 {
