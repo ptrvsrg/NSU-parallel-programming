@@ -87,8 +87,8 @@ int main(int argc, char **argv) {
     divide_area_into_layers(layer_heights, offsets, proc_count);
 
     // Init layers
-    func[0] = malloc(sizeof(double) * layer_heights[proc_rank] * N_Y * N_Z);
-    func[1] = malloc(sizeof(double) * layer_heights[proc_rank] * N_Y * N_Z);
+    func[is_prev_func] = malloc(sizeof(double) * layer_heights[proc_rank] * N_Y * N_Z);
+    func[is_curr_func] = malloc(sizeof(double) * layer_heights[proc_rank] * N_Y * N_Z);
     init_layers(func[is_prev_func], func[is_curr_func], layer_heights[proc_rank], offsets[proc_rank]);
 
     up_border_layer = malloc(sizeof(double) * N_Y * N_Z);
