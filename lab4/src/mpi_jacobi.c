@@ -13,33 +13,33 @@
 #include <stdlib.h>
 
 // Initial coordinates
-const double X_0 = -1.0;
-const double Y_0 = -1.0;
-const double Z_0 = -1.0;
+#define X_0 (double)-1.0
+#define Y_0 (double)-1.0
+#define Z_0 (double)-1.0
 
 // Dimension size
-const double D_X = 2.0;
-const double D_Y = 2.0;
-const double D_Z = 2.0;
+#define D_X (double)2.0
+#define D_Y (double)2.0
+#define D_Z (double)2.0
 
 // Grid size
-const int N_X = 100;
-const int N_Y = 100;
-const int N_Z = 100;
+#define N_X 300
+#define N_Y 300
+#define N_Z 300
 
 // Step size
-const double H_X = D_X / (N_X - 1);
-const double H_Y = D_Y / (N_Y - 1);
-const double H_Z = D_Z / (N_Z - 1);
+#define H_X (D_X / (N_X - 1))
+#define H_Y (D_Y / (N_Y - 1))
+#define H_Z (D_Z / (N_Z - 1))
 
 // Square of step size
-const double H_X_2 = H_X * H_X;
-const double H_Y_2 = H_Y * H_Y;
-const double H_Z_2 = H_Z * H_Z;
+#define H_X_2 (H_X * H_X)
+#define H_Y_2 (H_Y * H_Y)
+#define H_Z_2 (H_Z * H_Z)
 
 // Parameters
-const double a = 1.0E5;
-const double epsilon = 1.0E-8;
+#define A (double)1.0E5
+#define EPSILON (double)1.0E-8
 
 double phi(double x, double y, double z);
 double rho(double x, double y, double z);
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
 
         // Calculate the differences of the previous and current calculated functions
         MPI_Allreduce(&proc_max_diff, &max_diff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    } while (max_diff >= epsilon);
+    } while (max_diff >= EPSILON);
 
     // Calculate the differences of the calculated and theoretical functions
     max_diff = calc_max_diff(func[is_curr_func], layer_heights[proc_rank], offsets[proc_rank]);
@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
 }
 
 double rho(double x, double y, double z) {
-    return 6 - a * phi(x, y, z);
+    return 6 - A * phi(x, y, z);
 }
 
 double phi(double x, double y, double z) {
@@ -308,7 +308,7 @@ double calc_center(const double *prev_func, double *curr_func, int layer_height,
                 Fk = (prev_func[get_index(i, j, k + 1)] + prev_func[get_index(i, j, k - 1)]) / H_Z_2;
 
                 curr_func[get_index(i, j, k)] =
-                    (Fi + Fj + Fk - rho(get_x(offset + i), get_y(j), get_z(k))) / (2 / H_X_2 + 2 / H_Y_2 + 2 / H_Z_2 + a);
+                    (Fi + Fj + Fk - rho(get_x(offset + i), get_y(j), get_z(k))) / (2 / H_X_2 + 2 / H_Y_2 + 2 / H_Z_2 + A);
 
                 // Update max difference
                 tmp_max_diff = fabs(curr_func[get_index(i, j, k)] - prev_func[get_index(i, j, k)]);
@@ -348,7 +348,7 @@ double calc_border(const double *prev_func, double *curr_func, double *up_border
                 Fk = (prev_func[get_index(0, j, k + 1)] + prev_func[get_index(0, j, k - 1)]) / H_Z_2;
 
                 curr_func[get_index(0, j, k)] =
-                    (Fi + Fj + Fk - rho(get_x(offset), get_y(j), get_z(k))) / (2 / H_X_2 + 2 / H_Y_2 + 2 / H_Z_2 + a);
+                    (Fi + Fj + Fk - rho(get_x(offset), get_y(j), get_z(k))) / (2 / H_X_2 + 2 / H_Y_2 + 2 / H_Z_2 + A);
 
                 // Update max difference
                 tmp_max_diff = fabs(curr_func[get_index(0, j, k)] - prev_func[get_index(0, j, k)]);
@@ -363,7 +363,7 @@ double calc_border(const double *prev_func, double *curr_func, double *up_border
                 Fk = (prev_func[get_index(layer_height - 1, j, k + 1)] + prev_func[get_index(layer_height - 1, j, k - 1)]) / H_Z_2;
 
                 curr_func[get_index(layer_height - 1, j, k)] =
-                    (Fi + Fj + Fk - rho(get_x(offset + layer_height - 1), get_y(j), get_z(k))) / (2 / H_X_2 + 2 / H_Y_2 + 2 / H_Z_2 + a);
+                    (Fi + Fj + Fk - rho(get_x(offset + layer_height - 1), get_y(j), get_z(k))) / (2 / H_X_2 + 2 / H_Y_2 + 2 / H_Z_2 + A);
 
                 // Check for calculation end
                 tmp_max_diff = fabs(curr_func[get_index(layer_height - 1, j, k)] - prev_func[get_index(layer_height - 1, j, k)]);
