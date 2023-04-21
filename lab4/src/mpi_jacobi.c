@@ -294,21 +294,21 @@ void receive_layer(MPI_Request *send_req, MPI_Request *recv_req) {
  * @return Maximum differences of the previous and current calculated functions
  */
 double calc_center(const double *prev_func, double *curr_func, int layer_height, int offset) {
-    double Fi = 0.0;
-    double Fj = 0.0;
-    double Fk = 0.0;
+    double f_i = 0.0;
+    double f_j = 0.0;
+    double f_k = 0.0;
     double tmp_max_diff = 0.0;
     double max_diff = 0.0;
 
     for (int i = 1; i < layer_height - 1; ++i)
         for (int j = 1; j < N_Y - 1; ++j)
             for (int k = 1; k < N_Z - 1; ++k) {
-                Fi = (prev_func[get_index(i + 1, j, k)] + prev_func[get_index(i - 1, j, k)]) / H_X_2;
-                Fj = (prev_func[get_index(i, j + 1, k)] + prev_func[get_index(i, j - 1, k)]) / H_Y_2;
-                Fk = (prev_func[get_index(i, j, k + 1)] + prev_func[get_index(i, j, k - 1)]) / H_Z_2;
+                f_i = (prev_func[get_index(i + 1, j, k)] + prev_func[get_index(i - 1, j, k)]) / H_X_2;
+                f_j = (prev_func[get_index(i, j + 1, k)] + prev_func[get_index(i, j - 1, k)]) / H_Y_2;
+                f_k = (prev_func[get_index(i, j, k + 1)] + prev_func[get_index(i, j, k - 1)]) / H_Z_2;
 
                 curr_func[get_index(i, j, k)] =
-                    (Fi + Fj + Fk - rho(get_x(offset + i), get_y(j), get_z(k))) / (2 / H_X_2 + 2 / H_Y_2 + 2 / H_Z_2 + A);
+                    (f_i + f_j + f_k - rho(get_x(offset + i), get_y(j), get_z(k))) / (2 / H_X_2 + 2 / H_Y_2 + 2 / H_Z_2 + A);
 
                 // Update max difference
                 tmp_max_diff = fabs(curr_func[get_index(i, j, k)] - prev_func[get_index(i, j, k)]);
@@ -333,9 +333,9 @@ double calc_center(const double *prev_func, double *curr_func, int layer_height,
  * @return Maximum differences of the previous and current calculated functions
  */
 double calc_border(const double *prev_func, double *curr_func, double *up_border_layer, double *down_border_layer, int layer_height, int offset, int proc_rank, int proc_count) {
-    double Fi = 0.0;
-    double Fj = 0.0;
-    double Fk = 0.0;
+    double f_i = 0.0;
+    double f_j = 0.0;
+    double f_k = 0.0;
     double tmp_max_diff = 0.0;
     double max_diff = 0.0;
 
@@ -343,12 +343,12 @@ double calc_border(const double *prev_func, double *curr_func, double *up_border
         for (int k = 1; k < N_Z - 1; ++k) {
             // Calculate the upper border
             if (proc_rank != 0) {
-                Fi = (prev_func[get_index(1, j, k)] + up_border_layer[get_index(0, j, k)]) / H_X_2;
-                Fj = (prev_func[get_index(0, j + 1, k)] + prev_func[get_index(0, j - 1, k)]) / H_Y_2;
-                Fk = (prev_func[get_index(0, j, k + 1)] + prev_func[get_index(0, j, k - 1)]) / H_Z_2;
+                f_i = (prev_func[get_index(1, j, k)] + up_border_layer[get_index(0, j, k)]) / H_X_2;
+                f_j = (prev_func[get_index(0, j + 1, k)] + prev_func[get_index(0, j - 1, k)]) / H_Y_2;
+                f_k = (prev_func[get_index(0, j, k + 1)] + prev_func[get_index(0, j, k - 1)]) / H_Z_2;
 
                 curr_func[get_index(0, j, k)] =
-                    (Fi + Fj + Fk - rho(get_x(offset), get_y(j), get_z(k))) / (2 / H_X_2 + 2 / H_Y_2 + 2 / H_Z_2 + A);
+                    (f_i + f_j + f_k - rho(get_x(offset), get_y(j), get_z(k))) / (2 / H_X_2 + 2 / H_Y_2 + 2 / H_Z_2 + A);
 
                 // Update max difference
                 tmp_max_diff = fabs(curr_func[get_index(0, j, k)] - prev_func[get_index(0, j, k)]);
@@ -358,12 +358,12 @@ double calc_border(const double *prev_func, double *curr_func, double *up_border
 
             // Calculate the lower border
             if (proc_rank != proc_count - 1) {
-                Fi = (prev_func[get_index(layer_height - 2, j, k)] + down_border_layer[get_index(0, j, k)]) / H_X_2;
-                Fj = (prev_func[get_index(layer_height - 1, j + 1, k)] + prev_func[get_index(layer_height - 1, j - 1, k)]) / H_Y_2;
-                Fk = (prev_func[get_index(layer_height - 1, j, k + 1)] + prev_func[get_index(layer_height - 1, j, k - 1)]) / H_Z_2;
+                f_i = (prev_func[get_index(layer_height - 2, j, k)] + down_border_layer[get_index(0, j, k)]) / H_X_2;
+                f_j = (prev_func[get_index(layer_height - 1, j + 1, k)] + prev_func[get_index(layer_height - 1, j - 1, k)]) / H_Y_2;
+                f_k = (prev_func[get_index(layer_height - 1, j, k + 1)] + prev_func[get_index(layer_height - 1, j, k - 1)]) / H_Z_2;
 
                 curr_func[get_index(layer_height - 1, j, k)] =
-                    (Fi + Fj + Fk - rho(get_x(offset + layer_height - 1), get_y(j), get_z(k))) / (2 / H_X_2 + 2 / H_Y_2 + 2 / H_Z_2 + A);
+                    (f_i + f_j + f_k - rho(get_x(offset + layer_height - 1), get_y(j), get_z(k))) / (2 / H_X_2 + 2 / H_Y_2 + 2 / H_Z_2 + A);
 
                 // Check for calculation end
                 tmp_max_diff = fabs(curr_func[get_index(layer_height - 1, j, k)] - prev_func[get_index(layer_height - 1, j, k)]);
