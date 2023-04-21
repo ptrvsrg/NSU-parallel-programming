@@ -45,11 +45,12 @@ double phi(double x, double y, double z);
 double rho(double x, double y, double z);
 
 int get_index(int x, int y, int z);
-int get_x(int i);
-int get_y(int j);
-int get_z(int k);
+double get_x(int i);
+double get_y(int j);
+double get_z(int k);
 void divide_area_into_layers(int *layer_heights, int *offsets, int proc_count);
 void init_layers(double *prev_func, double *curr_func, int layer_height, int offset);
+void swap_func(double **prev_func, double **curr_func);
 void send_up_layer(const double *send_layer, double *recv_layer, int proc_rank, MPI_Request *send_up_req, MPI_Request *recv_up_req);
 void send_down_layer(const double *send_layer, double *recv_layer, int proc_rank, MPI_Request *send_down_req, MPI_Request *recv_down_req);
 void receive_layer(MPI_Request *send_req, MPI_Request *recv_req);
@@ -61,8 +62,6 @@ double calc_max_diff(const double *func, int layer_height, int offset);
 int main(int argc, char **argv) {
     int proc_rank = 0;
     int proc_count = 0;
-    int is_prev_func = 0;
-    int is_curr_func = 1;
     double start_time = 0.0;
     double finish_time = 0.0;
     double max_diff = 0.0;
@@ -70,7 +69,8 @@ int main(int argc, char **argv) {
     int *offsets = NULL;
     double *up_border_layer = NULL;
     double *down_border_layer = NULL;
-    double *(func[2]) = { NULL, NULL };
+    double *prev_func = NULL;
+    double *curr_func = NULL;
     MPI_Request send_up_req;
     MPI_Request send_down_req;
     MPI_Request recv_up_req;
@@ -87,9 +87,9 @@ int main(int argc, char **argv) {
     divide_area_into_layers(layer_heights, offsets, proc_count);
 
     // Init layers
-    func[is_prev_func] = malloc(sizeof(double) * layer_heights[proc_rank] * N_Y * N_Z);
-    func[is_curr_func] = malloc(sizeof(double) * layer_heights[proc_rank] * N_Y * N_Z);
-    init_layers(func[is_prev_func], func[is_curr_func], layer_heights[proc_rank], offsets[proc_rank]);
+    prev_func = malloc(sizeof(double) * layer_heights[proc_rank] * N_Y * N_Z);
+    curr_func = malloc(sizeof(double) * layer_heights[proc_rank] * N_Y * N_Z);
+    init_layers(prev_func, curr_func, layer_heights[proc_rank], offsets[proc_rank]);
 
     up_border_layer = malloc(sizeof(double) * N_Y * N_Z);
     down_border_layer = malloc(sizeof(double) * N_Y * N_Z);
@@ -100,18 +100,17 @@ int main(int argc, char **argv) {
         double tmp_max_diff = 0.0;
         double proc_max_diff = 0.0;
 
-        // Layer swap
-        is_prev_func = 1 - is_prev_func;
-        is_curr_func = 1 - is_curr_func;
+        // Function swap
+        swap_func(&prev_func, &curr_func);
 
         // Send border
         if (proc_rank != 0)
-            send_up_layer(func[is_prev_func], up_border_layer, proc_rank, &send_up_req, &recv_up_req);
+            send_up_layer(prev_func, up_border_layer, proc_rank, &send_up_req, &recv_up_req);
         if (proc_rank != proc_count - 1)
-            send_down_layer(func[is_prev_func] + (layer_heights[proc_rank] - 1) * N_Y * N_Z, down_border_layer, proc_rank, &send_down_req, &recv_down_req);
+            send_down_layer(prev_func + (layer_heights[proc_rank] - 1) * N_Y * N_Z, down_border_layer, proc_rank, &send_down_req, &recv_down_req);
 
         // Calculate center
-        proc_max_diff = calc_center(func[is_prev_func], func[is_curr_func], layer_heights[proc_rank], offsets[proc_rank]);
+        proc_max_diff = calc_center(prev_func, curr_func, layer_heights[proc_rank], offsets[proc_rank]);
 
         // Receive border
         if (proc_rank != 0)
@@ -120,8 +119,8 @@ int main(int argc, char **argv) {
             receive_layer(&send_down_req, &recv_down_req);
 
         // Calculate border
-        tmp_max_diff = calc_border(func[is_prev_func], func[is_curr_func], up_border_layer, down_border_layer, 
-                            layer_heights[proc_rank], offsets[proc_rank], proc_rank, proc_count);
+        tmp_max_diff = calc_border(prev_func, curr_func, up_border_layer, down_border_layer, 
+                                   layer_heights[proc_rank], offsets[proc_rank], proc_rank, proc_count);
         proc_max_diff = fmax(tmp_max_diff, proc_max_diff);
 
         // Calculate the differences of the previous and current calculated functions
@@ -129,7 +128,7 @@ int main(int argc, char **argv) {
     } while (max_diff >= EPSILON);
 
     // Calculate the differences of the calculated and theoretical functions
-    max_diff = calc_max_diff(func[is_curr_func], layer_heights[proc_rank], offsets[proc_rank]);
+    max_diff = calc_max_diff(curr_func, layer_heights[proc_rank], offsets[proc_rank]);
 
     finish_time = MPI_Wtime();
 
@@ -140,8 +139,8 @@ int main(int argc, char **argv) {
 
     free(offsets);
     free(layer_heights);
-    free(func[is_prev_func]);
-    free(func[is_curr_func]);
+    free(prev_func);
+    free(curr_func);
     free(up_border_layer);
     free(down_border_layer);
 
@@ -176,7 +175,7 @@ int get_index(int x, int y, int z) {
  * @param i Node index
  * @return X-axis coordinate 
  */
-int get_x(int i) {
+double get_x(int i) {
     return X_0 + i * H_X;
 }
 
@@ -186,7 +185,7 @@ int get_x(int i) {
  * @param j Node index
  * @return Y-axis coordinate 
  */
-int get_y(int j) {
+double get_y(int j) {
     return Y_0 + j * H_Y;
 }
 
@@ -196,7 +195,7 @@ int get_y(int j) {
  * @param k Node index
  * @return Z-axis coordinate 
  */
-int get_z(int k) {
+double get_z(int k) {
     return Z_0 + k * H_Z;
 }
 
@@ -243,6 +242,19 @@ void init_layers(double *prev_func, double *curr_func, int layer_height, int off
                     curr_func[get_index(i, j, k)] = 0;
                 }
             }
+}
+
+/**
+ * @brief Swaps the address of the array of values of the previous calculated function and 
+ *        the address of the array of values of the current calculated function
+ * 
+ * @param prev_func Address of address of array of values of the previous calculated function
+ * @param curr_func Address of address of array of values of the current calculated function
+ */
+void swap_func(double **prev_func, double **curr_func) {
+    double *tmp = *prev_func;
+    *prev_func = *curr_func;
+    *curr_func = tmp;
 }
 
 /**
