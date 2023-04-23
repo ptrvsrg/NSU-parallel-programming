@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -14,5 +14,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build and Launch
-      run: sh ${{ matrix.labs }}/src/test.sh
+    
+    - name: Configure
+      run: cd ${{ matrix.labs }}/src
+      
+    - name: Build and Run
+      run: sh test.sh
