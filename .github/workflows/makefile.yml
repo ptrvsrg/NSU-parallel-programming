@@ -18,6 +18,7 @@ jobs:
       
     - name: Build and Run
       run: |
+        ls
         echo "Testing version 1 for 1 process:"
         make version=1 np=1
         echo "Testing version 1 for 16 processes:"
