@@ -8,78 +8,70 @@ on:
 jobs:
   test_lab_1:
     runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
-        MPI_proc: [1, 2, 4, 8, 16]
+        MPI_NP: [1, 2, 4, 8, 16]
         version: [1, 2]
-        
     steps:
-    - uses: actions/checkout@v2
-    - uses: mpi4py/setup-mpi@v1
-    
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Setup MPI
+      uses: mpi4py/setup-mpi@v1
+      with:
+        mpi: ${{ matrix.mpi }}
     - name: Build and Run
-      run: |
-        cd lab1/src
-        make version=${{ matrix.version }} np=${{ matrix.MPI_proc }}
+      working-directory: lab1/src
+      run: make version=${{ matrix.version }} np=${{ matrix.MPI_NP }}
       
   test_lab_2:
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
+      matrix:
+        OMP_NUM_THREADS: [1, 2, 4, 8, 16]
+        version: [1, 2]
+        schedule_type: ["static", "dynamic", "guided"]
+        schedule_chunk: [0, 100, 200, 400, 800]
     steps:
-    - uses: actions/checkout@v2
-    
+    - name: Checkout
+      uses: actions/checkout@v3
     - name: Build and Run
-      run: | 
-        cd lab2/src
-        echo "Testing version 1 for 1 thread:"
-        make version=1 np=1
-        echo "Testing version 1 for 16 threads:"
-        make version=1 np=16
-        echo "Testing version 2 for 1 thread:"
-        make version=2 np=1
-        echo "Testing version 2 for 16 threads:"
-        make version=2 np=16
-        echo "Testing version 3 for 16 threads with default static schedule:"
-        make version=2 np=16 schedule=static
-        echo "Testing version 3 for 16 threads with custom static schedule:"
-        make version=2 np=16 schedule=static,200
-        echo "Testing version 3 for 16 threads with default dynamic schedule:"
-        make version=2 np=16 schedule=dynamic
-        echo "Testing version 3 for 16 threads with custom dynamic schedule:"
-        make version=2 np=16 schedule=dynamic,200
-        echo "Testing version 3 for 16 threads with default guided schedule:"
-        make version=2 np=16 schedule=guided
-        echo "Testing version 3 for 16 threads with custom guided schedule:"
-        make version=2 np=16 schedule=guided,200
+      working-directory: lab2/src
+      run: make version=${{ matrix.version }} np=${{ matrix.OMP_NUM_THREADS }}
+    - name: Test schedule
+      run: make version=schedule np=16 schedule=${{ matrix.schedule_type }},${{ matrix.schedule_chunk }}
       
   test_lab_3:
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
+      matrix:
+        MPI_NP: [1, 2, 4, 8, 16]
     steps:
-    - uses: actions/checkout@v2
-    - uses: mpi4py/setup-mpi@v1
-    
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Setup MPI
+      uses: mpi4py/setup-mpi@v1
+      with:
+        mpi: ${{ matrix.mpi }}
     - name: Build and Run
-      run: |
-        cd lab3/src
-        echo "Testing for 1 process:"
-        make np=1
-        echo "Testing for 16 processes:"
-        make np=16
+      working-directory: lab3/src
+      run: make np=${{ matrix.MPI_NP }}
       
-  test_lab_4:
+  test_lab_4:    
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
+      matrix:
+        MPI_NP: [1, 2, 4, 8, 16]
     steps:
-    - uses: actions/checkout@v2
-    - uses: mpi4py/setup-mpi@v1
-    
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Setup MPI
+      uses: mpi4py/setup-mpi@v1
+      with:
+        mpi: ${{ matrix.mpi }}
     - name: Build and Run
-      run: |
-        cd lab4/src
-        echo "Testing for 1 process:"
-        make np=1
-        echo "Testing for 16 processes:"
-        make np=16
+      working-directory: lab4/src
+      run: make np=${{ matrix.MPI_NP }}
