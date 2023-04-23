@@ -41,13 +41,13 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
     - name: Build
-      working-directory: lab1/src
+      working-directory: lab2/src
       run: make build version=${{ matrix.version }}
     - name: Run
-      working-directory: lab1/src
+      working-directory: lab2/src
       run: make run version=${{ matrix.version }} np=${{ matrix.OPM_NUM_THREADS }}
     - name: Clean
-      working-directory: lab1/src
+      working-directory: lab2/src
       run: make clean version=${{ matrix.version }}
       
   test_schedule_lab_2:
