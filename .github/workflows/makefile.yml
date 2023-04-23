@@ -10,12 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v2
     
     - name: Configure
       run: |
         cd lab1/src
-        ./configure
       
     - name: Build and Run
       run: |
@@ -35,12 +34,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v2
     
     - name: Configure
       run: | 
         cd lab2/src
-        ./configure
       
     - name: Build and Run
       run: |
@@ -72,12 +70,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v2
     
     - name: Configure
       run: |
         cd lab3/src
-        ./configure
       
     - name: Build and Run
       run: |
@@ -93,12 +90,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v2
     
     - name: Configure
       run: |
         cd lab4/src
-        ./configure
       
     - name: Build and Run
       run: |
