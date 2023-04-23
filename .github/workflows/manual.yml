@@ -13,17 +13,19 @@ jobs:
     - uses: actions/checkout@v3
     
     - name: Configure
-      run: cd lab1/src
+      run: |
+        cd lab1/src
+        ./configure
       
     - name: Build and Run
       run: |
         echo "Testing version 1 for 1 process:"
         make version=1 np=1
-        echo "Testing version 1 for 16 process:"
+        echo "Testing version 1 for 16 processes:"
         make version=1 np=16
         echo "Testing version 2 for 1 process:"
         make version=2 np=1
-        echo "Testing version 2 for 16 process:"
+        echo "Testing version 2 for 16 processes:"
         make version=2 np=16
         
     - name: Restore
@@ -36,29 +38,31 @@ jobs:
     - uses: actions/checkout@v3
     
     - name: Configure
-      run: cd lab2/src
+      run: | 
+        cd lab2/src
+        ./configure
       
     - name: Build and Run
       run: |
-        echo "Testing version 1 for 1 process:"
+        echo "Testing version 1 for 1 thread:"
         make version=1 np=1
-        echo "Testing version 1 for 16 process:"
+        echo "Testing version 1 for 16 threads:"
         make version=1 np=16
-        echo "Testing version 2 for 1 process:"
+        echo "Testing version 2 for 1 thread:"
         make version=2 np=1
-        echo "Testing version 2 for 16 process:"
+        echo "Testing version 2 for 16 threads:"
         make version=2 np=16
-        echo "Testing version 3 for 16 process with default static schedule:"
+        echo "Testing version 3 for 16 threads with default static schedule:"
         make version=2 np=16 schedule=static
-        echo "Testing version 3 for 16 process with custom static schedule:"
+        echo "Testing version 3 for 16 threads with custom static schedule:"
         make version=2 np=16 schedule=static,200
-        echo "Testing version 3 for 16 process with default dynamic schedule:"
+        echo "Testing version 3 for 16 threads with default dynamic schedule:"
         make version=2 np=16 schedule=dynamic
-        echo "Testing version 3 for 16 process with custom dynamic schedule:"
+        echo "Testing version 3 for 16 threads with custom dynamic schedule:"
         make version=2 np=16 schedule=dynamic,200
-        echo "Testing version 3 for 16 process with default guided schedule:"
+        echo "Testing version 3 for 16 threads with default guided schedule:"
         make version=2 np=16 schedule=guided
-        echo "Testing version 3 for 16 process with custom guided schedule:"
+        echo "Testing version 3 for 16 threads with custom guided schedule:"
         make version=2 np=16 schedule=guided,200
         
     - name: Restore
@@ -71,13 +75,15 @@ jobs:
     - uses: actions/checkout@v3
     
     - name: Configure
-      run: cd lab3/src
+      run: |
+        cd lab3/src
+        ./configure
       
     - name: Build and Run
       run: |
         echo "Testing for 1 process:"
         make np=1
-        echo "Testing for 16 process:"
+        echo "Testing for 16 processes:"
         make np=16
         
     - name: Restore
@@ -90,13 +96,15 @@ jobs:
     - uses: actions/checkout@v3
     
     - name: Configure
-      run: cd lab4/src
+      run: |
+        cd lab4/src
+        ./configure
       
     - name: Build and Run
       run: |
         echo "Testing for 1 process:"
         make np=1
-        echo "Testing for 16 process:"
+        echo "Testing for 16 processes:"
         make np=16
         
     - name: Restore
