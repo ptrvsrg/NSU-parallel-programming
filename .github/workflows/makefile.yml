@@ -39,6 +39,7 @@ jobs:
       run: make version=${{ matrix.version }} np=${{ matrix.OMP_NUM_THREADS }}
       
   test_schedule_lab_2:
+    needs: test_lab_2
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
