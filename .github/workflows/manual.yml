@@ -1,0 +1,103 @@
+name: Manual
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+jobs:
+  test_lab_1:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configure
+      run: cd lab1/src
+      
+    - name: Build and Run
+      run: |
+        echo "Testing version 1 for 1 process:"
+        make version=1 np=1
+        echo "Testing version 1 for 16 process:"
+        make version=1 np=16
+        echo "Testing version 2 for 1 process:"
+        make version=2 np=1
+        echo "Testing version 2 for 16 process:"
+        make version=2 np=16
+        
+    - name: Restore
+      run: cd ../../
+      
+  test_lab_2:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configure
+      run: cd lab2/src
+      
+    - name: Build and Run
+      run: |
+        echo "Testing version 1 for 1 process:"
+        make version=1 np=1
+        echo "Testing version 1 for 16 process:"
+        make version=1 np=16
+        echo "Testing version 2 for 1 process:"
+        make version=2 np=1
+        echo "Testing version 2 for 16 process:"
+        make version=2 np=16
+        echo "Testing version 3 for 16 process with default static schedule:"
+        make version=2 np=16 schedule=static
+        echo "Testing version 3 for 16 process with custom static schedule:"
+        make version=2 np=16 schedule=static,200
+        echo "Testing version 3 for 16 process with default dynamic schedule:"
+        make version=2 np=16 schedule=dynamic
+        echo "Testing version 3 for 16 process with custom dynamic schedule:"
+        make version=2 np=16 schedule=dynamic,200
+        echo "Testing version 3 for 16 process with default guided schedule:"
+        make version=2 np=16 schedule=guided
+        echo "Testing version 3 for 16 process with custom guided schedule:"
+        make version=2 np=16 schedule=guided,200
+        
+    - name: Restore
+      run: cd ../../
+      
+  test_lab_3:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configure
+      run: cd lab3/src
+      
+    - name: Build and Run
+      run: |
+        echo "Testing for 1 process:"
+        make np=1
+        echo "Testing for 16 process:"
+        make np=16
+        
+    - name: Restore
+      run: cd ../../
+      
+  test_lab_4:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configure
+      run: cd lab4/src
+      
+    - name: Build and Run
+      run: |
+        echo "Testing for 1 process:"
+        make np=1
+        echo "Testing for 16 process:"
+        make np=16
+        
+    - name: Restore
+      run: cd ../../
