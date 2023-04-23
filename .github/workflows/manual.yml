@@ -1,0 +1,16 @@
+name: Manual workflow
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        labs: [ "lab1", "lab2", "lab3", "lab4" ]
+
+    steps:
+    - name: Build and Launch
+      run: sh ${{ labs }}/src/test.sh
