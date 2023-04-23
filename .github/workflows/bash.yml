@@ -19,6 +19,7 @@ jobs:
       run: |
         cd ${{ matrix.labs }}/src
         chmod +x ./test.sh
+        ls
       
     - name: Build and Run
       run: ./test.sh
