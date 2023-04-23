@@ -21,7 +21,7 @@ jobs:
     - name: Build and Run
       run: |
         cd lab1/src
-        make version=${{ version }} np=${{ MPI_proc }}
+        make version=${{ matrix.version }} np=${{ matrix.MPI_proc }}
       
   test_lab_2:
     runs-on: ubuntu-latest
