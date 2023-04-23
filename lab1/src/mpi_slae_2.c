@@ -13,11 +13,10 @@ void generate_A_chunk(double* A_chunk, int line_count, int line_size, int proces
 void generate_x_chunk(double* x_chunk, int size);
 void generate_b_chunk(double* b_chunk, int size);
 double calc_norm_square(double* vector, int size);
-void calc_Axb(const double* A_chunk, const double* x_chunk, const double* b_chunk, double* recv_x_chunk, 
+void calc_Axb(const double* A_chunk, const double* x_chunk, const double* b_chunk, double* replace_x_chunk, 
              double* Axb_chunk, int* line_counts, int* line_offsets, int process_rank, int process_count);
 void calc_next_x(const double* Axb, double* x_chunk, double tau, int chunk_size);
 void copy_vector(double* dest, const double* src, int size);
-// void print_matrix(const double* a, int lines, int columns);
 
 int main(int argc, char** argv)
 {
@@ -38,7 +37,7 @@ int main(int argc, char** argv)
     double* b_chunk;
     double* A_chunk;
     double* Axb_chunk;
-    double* recv_x_chunk;
+    double* replace_x_chunk;
     
     MPI_Init(&argc, &argv);
 
@@ -63,13 +62,13 @@ int main(int argc, char** argv)
         b_norm = sqrt(b_norm);
 
     Axb_chunk = malloc(sizeof(double) * line_counts[process_rank]);
-    recv_x_chunk = malloc(sizeof(double) * line_counts[0]);
+    replace_x_chunk = malloc(sizeof(double) * line_counts[0]);
 
     start_time = MPI_Wtime();
 
     for (iter_count = 0; accuracy > EPSILON && iter_count < MAX_ITERATION_COUNT; ++iter_count)
     {
-        calc_Axb(A_chunk, x_chunk, b_chunk, recv_x_chunk, Axb_chunk, 
+        calc_Axb(A_chunk, x_chunk, b_chunk, replace_x_chunk, Axb_chunk, 
                 line_counts, line_offsets, process_rank, process_count);
 
         calc_next_x(Axb_chunk, x_chunk, TAU, line_counts[process_rank]);
@@ -157,14 +156,14 @@ double calc_norm_square(double* vector, int size)
     return norm_square;
 }
 
-void calc_Axb(const double* A_chunk, const double* x_chunk, const double* b_chunk, double* recv_x_chunk, 
+void calc_Axb(const double* A_chunk, const double* x_chunk, const double* b_chunk, double* replace_x_chunk, 
              double* Axb_chunk, int* line_counts, int* line_offsets, int process_rank, int process_count)
 {
     int src_rank = (process_rank + process_count - 1) % process_count;
     int dest_rank = (process_rank + 1) % process_count;
     int current_rank;
 
-    copy_vector(recv_x_chunk, x_chunk, line_counts[process_rank]);
+    copy_vector(replace_x_chunk, x_chunk, line_counts[process_rank]);
 
     for (int i = 0; i < process_count; ++i)
     {
@@ -174,11 +173,11 @@ void calc_Axb(const double* A_chunk, const double* x_chunk, const double* b_chun
             if (i == 0)
                 Axb_chunk[j] = -b_chunk[j];
             for (int k = 0; k < line_counts[current_rank]; ++k)
-                Axb_chunk[j] += A_chunk[j * N + line_offsets[current_rank] + k] * recv_x_chunk[k];
+                Axb_chunk[j] += A_chunk[j * N + line_offsets[current_rank] + k] * replace_x_chunk[k];
         }
 
         if (i != process_count - 1)
-            MPI_Sendrecv_replace(recv_x_chunk, line_counts[0], MPI_DOUBLE, dest_rank, process_rank, 
+            MPI_Sendrecv_replace(replace_x_chunk, line_counts[0], MPI_DOUBLE, dest_rank, process_rank, 
                                  src_rank, src_rank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 }
@@ -194,14 +193,3 @@ void copy_vector(double* dest, const double* src, int size)
     for (int i = 0; i < size; i++)
         dest[i] = src[i];
 }
-
-// void print_matrix(const double* a, int lines, int columns)
-// {
-//     for (int i = 0; i < lines; i++)
-//     {
-//         for (int j = 0; j < columns; j++)
-//             printf("%lf ", a[i * columns + j]);
-
-//         printf("\n");
-//     }
-// }
