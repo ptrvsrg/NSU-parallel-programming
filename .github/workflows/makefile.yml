@@ -20,9 +20,15 @@ jobs:
       uses: mpi4py/setup-mpi@v1
       with:
         mpi: ${{ matrix.mpi }}
-    - name: Build and Run
+    - name: Build
       working-directory: lab1/src
-      run: make version=${{ matrix.version }} np=${{ matrix.MPI_NP }}
+      run: make build version=${{ matrix.version }}
+    - name: Run
+      working-directory: lab1/src
+      run: make run version=${{ matrix.version }} np=${{ matrix.MPI_NP }}
+    - name: Clean
+      working-directory: lab1/src
+      run: make clean version=${{ matrix.version }}
       
   test_lab_2:
     runs-on: ubuntu-latest
@@ -34,9 +40,15 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
-    - name: Build and Run
-      working-directory: lab2/src
-      run: make version=${{ matrix.version }} np=${{ matrix.OMP_NUM_THREADS }}
+    - name: Build
+      working-directory: lab1/src
+      run: make build version=${{ matrix.version }}
+    - name: Run
+      working-directory: lab1/src
+      run: make run version=${{ matrix.version }} np=${{ matrix.OPM_NUM_THREADS }}
+    - name: Clean
+      working-directory: lab1/src
+      run: make clean version=${{ matrix.version }}
       
   test_schedule_lab_2:
     needs: test_lab_2
@@ -49,10 +61,16 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
-    - name: Build and Run
+    - name: Build
       working-directory: lab2/src
-      run: make version=schedule np=16 schedule=${{ matrix.schedule_type }},${{ matrix.schedule_chunk }}
-      
+      run: make build version=schedule
+    - name: Run
+      working-directory: lab2/src
+      run: make run version=schedule np=16 schedule=${{ matrix.schedule_type }},${{ matrix.schedule_chunk }}
+    - name: Clean
+      working-directory: lab2/src
+      run: make clean version=schedule
+  
   test_lab_3:
     runs-on: ubuntu-latest
     strategy:
@@ -66,9 +84,15 @@ jobs:
       uses: mpi4py/setup-mpi@v1
       with:
         mpi: ${{ matrix.mpi }}
-    - name: Build and Run
+    - name: Build
       working-directory: lab3/src
-      run: make np=${{ matrix.MPI_NP }}
+      run: make build
+    - name: Run
+      working-directory: lab3/src
+      run: make run np=${{ matrix.MPI_NP }}
+    - name: Clean
+      working-directory: lab3/src
+      run: make clean
       
   test_lab_4:    
     runs-on: ubuntu-latest
@@ -83,6 +107,12 @@ jobs:
       uses: mpi4py/setup-mpi@v1
       with:
         mpi: ${{ matrix.mpi }}
-    - name: Build and Run
+    - name: Build
       working-directory: lab4/src
-      run: make np=${{ matrix.MPI_NP }}
+      run: make build
+    - name: Run
+      working-directory: lab4/src
+      run: make run np=${{ matrix.MPI_NP }}
+    - name: Clean
+      working-directory: lab4/src
+      run: make clean
