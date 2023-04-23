@@ -15,4 +15,4 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build and Launch
-      run: sh ${{ labs }}/src/test.sh
+      run: sh ${{ matrix.labs }}/src/test.sh
