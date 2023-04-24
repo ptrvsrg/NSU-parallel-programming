@@ -1,7 +1,5 @@
 np=1
 
-all: run clean
-
 build: mpi_slae_$(version).c
 	mpicc -o mpi_slae_$(version) mpi_slae_$(version).c -lm -Wall
 
