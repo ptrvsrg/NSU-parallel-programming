@@ -100,7 +100,6 @@ jobs:
       fail-fast: false
       matrix:
         dims_x: [1, 2, 4, 8, 16]
-        dims_y: [16, 8, 4, 2, 1]
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -113,7 +112,7 @@ jobs:
       run: make build
     - name: Run
       working-directory: lab3/src
-      run: make run_custom_grid np=16 dims_x=${{ matrix.dims_x }} dims_y=${{ matrix.dims_y }}
+      run: make run_custom_grid np=16 dims_x=${{ matrix.dims_x }} dims_y=$((16 / ${{ matrix.dims_x }}))
     - name: Clean
       working-directory: lab3/src
       run: make clean
