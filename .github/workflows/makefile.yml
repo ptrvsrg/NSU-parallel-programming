@@ -71,7 +71,7 @@ jobs:
       working-directory: lab2/src
       run: make clean version=schedule
   
-  test_lab_3:
+  test_default_grid_lab_3:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -89,7 +89,31 @@ jobs:
       run: make build
     - name: Run
       working-directory: lab3/src
-      run: make run np=${{ matrix.MPI_NP }}
+      run: make run_default_grid np=${{ matrix.MPI_NP }}
+    - name: Clean
+      working-directory: lab3/src
+      run: make clean
+  
+  test_custom_grid_lab_3:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dims_x: [1, 2, 4, 8, 16]
+        dims_y: [16, 8, 4, 2, 1]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Setup MPI
+      uses: mpi4py/setup-mpi@v1
+      with:
+        mpi: ${{ matrix.mpi }}
+    - name: Build
+      working-directory: lab3/src
+      run: make build
+    - name: Run
+      working-directory: lab3/src
+      run: make run_custom_grid np=16 dims_x=${{ matrix.dims_x }} dims_y=${{ matrix.dims_y }}
     - name: Clean
       working-directory: lab3/src
       run: make clean
