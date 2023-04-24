@@ -48,7 +48,7 @@ jobs:
         working-directory: lab3/src
         env:
           DIMS_Y: $((16 / ${{ matrix.DIMS_X }}))
-        run: make run_custom_grid np=16 dims_x=${{ matrix.DIMS_X }} dims_y=${{ DIMS_Y }}
+        run: make run_custom_grid np=16 dims_x=${{ matrix.DIMS_X }} dims_y=${{ env.DIMS_Y }}
       - name: Clean
         working-directory: lab3/src
         run: make clean
