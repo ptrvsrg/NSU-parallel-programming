@@ -3,8 +3,6 @@ name: Test Lab 4
 on:
   workflow_dispatch:
   push:
-    paths:
-      - "lab4"
 
 jobs:
   test_lab_4:

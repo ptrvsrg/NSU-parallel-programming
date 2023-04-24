@@ -3,8 +3,6 @@ name: Test Lab 2
 on:
   workflow_dispatch:
   push:
-    paths:
-      - "lab2"
 
 jobs:
   test_default_schedule:
