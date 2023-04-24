@@ -29,6 +29,7 @@ jobs:
         run: make clean
 
   test_custom_grid:
+    needs: test_default_grid
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
