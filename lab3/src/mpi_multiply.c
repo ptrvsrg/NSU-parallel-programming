@@ -130,6 +130,9 @@ void init_dims(int dims[DIMS_COUNT], int proc_count, int argc, char **argv)
     {
         dims[X] = atoi(argv[1]);
         dims[Y] = atoi(argv[2]);
+
+        if (dims[X] * dims[Y] != proc_count)
+            exit(EXIT_FAILURE);
     }
 }
 
