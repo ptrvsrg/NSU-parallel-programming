@@ -26,7 +26,6 @@ jobs:
         run: make clean version=${{ matrix.VERSION }}
 
   test_custom_schedule:
-    needs: test_default_schedule
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
