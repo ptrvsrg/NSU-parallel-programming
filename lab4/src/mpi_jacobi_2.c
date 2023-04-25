@@ -2,8 +2,7 @@
  * @file mpi_jacobi.c
  * @author ptrvsrg (s.petrov1@g.nsu.ru)
  * @brief The solution of equation by the Jacobi method in a 3D domain in the case of a 1D decomposition of the domain
- * @version 1.0
- *
+ * @version 2.0
  */
 
 #include <math.h>
@@ -23,9 +22,9 @@
 #define D_Z (double)2.0
 
 // Grid size
-#define N_X 300
-#define N_Y 300
-#define N_Z 300
+#define N_X 400
+#define N_Y 400
+#define N_Z 400
 
 // Step size
 #define H_X (D_X / (N_X - 1))
@@ -39,7 +38,7 @@
 
 // Parameters
 #define A (double)1.0E5
-#define EPSILON (double)1.0E-8
+#define EPSILON (double)1.0E-3
 
 double phi(double x, double y, double z);
 double rho(double x, double y, double z);
@@ -51,9 +50,6 @@ double get_z(int k);
 void divide_area_into_layers(int *layer_heights, int *offsets, int proc_count);
 void init_layers(double *prev_func, double *curr_func, int layer_height, int offset);
 void swap_func(double **prev_func, double **curr_func);
-void send_up_layer(const double *send_layer, double *recv_layer, int proc_rank, MPI_Request *send_up_req, MPI_Request *recv_up_req);
-void send_down_layer(const double *send_layer, double *recv_layer, int proc_rank, MPI_Request *send_down_req, MPI_Request *recv_down_req);
-void receive_layer(MPI_Request *send_req, MPI_Request *recv_req);
 double calc_center(const double *prev_func, double *curr_func, int layer_height, int offset);
 double calc_border(const double *prev_func, double *curr_func, double *up_border_layer, double *down_border_layer,
                    int layer_height, int offset, int proc_rank, int proc_count);
@@ -64,6 +60,7 @@ int main(int argc, char **argv) {
     int proc_count = 0;
     double start_time = 0.0;
     double finish_time = 0.0;
+    double prev_proc_max_diff = EPSILON;
     double max_diff = 0.0;
     int *layer_heights = NULL;
     int *offsets = NULL;
@@ -75,6 +72,7 @@ int main(int argc, char **argv) {
     MPI_Request send_down_req;
     MPI_Request recv_up_req;
     MPI_Request recv_down_req;
+    MPI_Request reduce_max_diff_req;
 
     // Check grid size
     if (N_X < 3 || N_Y < 3 || N_Z < 3) {
@@ -103,35 +101,54 @@ int main(int argc, char **argv) {
     start_time = MPI_Wtime();
 
     do {
-        double tmp_max_diff = 0.0;
-        double proc_max_diff = 0.0;
+        double tmp_max_diff_1 = 0.0;
+        double tmp_max_diff_2 = 0.0;
 
-        // Function swap
+        // Start calculating the differences of the previous and current calculated functions for previous iterations
+        MPI_Iallreduce(&prev_proc_max_diff, &max_diff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD, &reduce_max_diff_req);
+
+        // Swap functions
         swap_func(&prev_func, &curr_func);
 
-        // Send border
-        if (proc_rank != 0)
-            send_up_layer(prev_func, up_border_layer, proc_rank, &send_up_req, &recv_up_req);
-        if (proc_rank != proc_count - 1)
-            send_down_layer(prev_func + (layer_heights[proc_rank] - 1) * N_Y * N_Z, down_border_layer, proc_rank, &send_down_req, &recv_down_req);
+        // Start sending and receiving border
+        if (proc_rank != 0) {
+            double *prev_up_border = prev_func;
+            MPI_Isend(prev_up_border, N_Y * N_Z, MPI_DOUBLE, proc_rank - 1, proc_rank, MPI_COMM_WORLD, &send_up_req);
+            MPI_Irecv(up_border_layer, N_Y * N_Z, MPI_DOUBLE, proc_rank - 1, proc_rank - 1, MPI_COMM_WORLD, &recv_up_req);
+        }
+        
+        if (proc_rank != proc_count - 1) {
+            double *prev_down_border = prev_func + (layer_heights[proc_rank] - 1) * N_Y * N_Z;
+            MPI_Isend(prev_down_border, N_Y * N_Z, MPI_DOUBLE, proc_rank + 1, proc_rank, MPI_COMM_WORLD, &send_down_req);
+            MPI_Irecv(down_border_layer, N_Y * N_Z, MPI_DOUBLE, proc_rank + 1, proc_rank + 1, MPI_COMM_WORLD, &recv_down_req);
+        }
 
         // Calculate center
-        proc_max_diff = calc_center(prev_func, curr_func, layer_heights[proc_rank], offsets[proc_rank]);
+        tmp_max_diff_1 = calc_center(prev_func, curr_func, layer_heights[proc_rank], offsets[proc_rank]);
 
-        // Receive border
-        if (proc_rank != 0)
-            receive_layer(&send_up_req, &recv_up_req);
-        if (proc_rank != proc_count - 1)
-            receive_layer(&send_down_req, &recv_down_req);
+        // Finish sending and receiving border
+        if (proc_rank != 0) {
+            MPI_Wait(&send_up_req, MPI_STATUS_IGNORE);
+            MPI_Wait(&recv_up_req, MPI_STATUS_IGNORE);
+        }
+        
+        if (proc_rank != proc_count - 1) {
+            MPI_Wait(&send_down_req, MPI_STATUS_IGNORE);
+            MPI_Wait(&recv_down_req, MPI_STATUS_IGNORE);
+        }
 
         // Calculate border
-        tmp_max_diff = calc_border(prev_func, curr_func, up_border_layer, down_border_layer,
+        tmp_max_diff_2 = calc_border(prev_func, curr_func, up_border_layer, down_border_layer,
                                    layer_heights[proc_rank], offsets[proc_rank], proc_rank, proc_count);
-        proc_max_diff = fmax(tmp_max_diff, proc_max_diff);
 
-        // Calculate the differences of the previous and current calculated functions
-        MPI_Allreduce(&proc_max_diff, &max_diff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+        // Start calculating the differences of the previous and current calculated functions for previous iterations
+        MPI_Wait(&reduce_max_diff_req, MPI_STATUS_IGNORE);
+
+        prev_proc_max_diff = fmax(tmp_max_diff_1, tmp_max_diff_2);
     } while (max_diff >= EPSILON);
+
+    // Swap functions as extra iteration is made
+    swap_func(&prev_func, &curr_func);
 
     // Calculate the differences of the calculated and theoretical functions
     max_diff = calc_max_diff(curr_func, layer_heights[proc_rank], offsets[proc_rank]);
@@ -261,45 +278,6 @@ void swap_func(double **prev_func, double **curr_func) {
     double *tmp = *prev_func;
     *prev_func = *curr_func;
     *curr_func = tmp;
-}
-
-/**
- * @brief Sends up the layer
- *
- * @param send_layer Address of send layer
- * @param recv_layer Address of receive layer
- * @param proc_rank Rank of process
- * @param send_up_req Pointer to the handle of sending up operations
- * @param recv_up_req Pointer to the handle of receiving up operations
- */
-void send_up_layer(const double *send_layer, double *recv_layer, int proc_rank, MPI_Request *send_up_req, MPI_Request *recv_up_req) {
-    MPI_Isend(send_layer, N_Y * N_Z, MPI_DOUBLE, proc_rank - 1, proc_rank, MPI_COMM_WORLD, send_up_req);
-    MPI_Irecv(recv_layer, N_Y * N_Z, MPI_DOUBLE, proc_rank - 1, proc_rank - 1, MPI_COMM_WORLD, recv_up_req);
-}
-
-/**
- * @brief Sends down the layer
- *
- * @param send_layer Address of send layer
- * @param recv_layer Address of receive layer
- * @param proc_rank Rank of process
- * @param send_down_req Pointer to the handle of sending down operations
- * @param recv_down_req Pointer to the handle of receiving down operations
- */
-void send_down_layer(const double *send_layer, double *recv_layer, int proc_rank, MPI_Request *send_down_req, MPI_Request *recv_down_req) {
-    MPI_Isend(send_layer, N_Y * N_Z, MPI_DOUBLE, proc_rank + 1, proc_rank, MPI_COMM_WORLD, send_down_req);
-    MPI_Irecv(recv_layer, N_Y * N_Z, MPI_DOUBLE, proc_rank + 1, proc_rank + 1, MPI_COMM_WORLD, recv_down_req);
-}
-
-/**
- * @brief Waits for the layers to be sent
- *
- * @param send_req Pointer to the handle of sending operations
- * @param recv_req Pointer to the handle of receiving operations
- */
-void receive_layer(MPI_Request *send_req, MPI_Request *recv_req) {
-    MPI_Wait(send_req, MPI_STATUS_IGNORE);
-    MPI_Wait(recv_req, MPI_STATUS_IGNORE);
 }
 
 /**
