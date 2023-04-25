@@ -1,10 +1,11 @@
 np=1
+version=1
 
-build: mpi_jacobi.c
-	mpicc -o mpi_jacobi mpi_jacobi.c -lm -Wall
+build:
+	mpicc -o mpi_jacobi_$(version) mpi_jacobi_$(version).c -lm -Wall
 
-run: build mpi_jacobi
-	mpirun -np $(np) ./mpi_jacobi
+run: build
+	mpirun -np $(np) ./mpi_jacobi_$(version)
 
 clean:
-	rm -rf mpi_jacobi
+	rm -rf mpi_jacobi_$(version)
