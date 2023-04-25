@@ -3,7 +3,7 @@
  * @author ptrvsrg (s.petrov1@g.nsu.ru)
  * @brief The solution of equation by the Jacobi method in a 3D domain in the case of a 1D decomposition of the domain
  * @version 1.0
- * 
+ *
  */
 
 #include <math.h>
@@ -55,8 +55,8 @@ void send_up_layer(const double *send_layer, double *recv_layer, int proc_rank, 
 void send_down_layer(const double *send_layer, double *recv_layer, int proc_rank, MPI_Request *send_down_req, MPI_Request *recv_down_req);
 void receive_layer(MPI_Request *send_req, MPI_Request *recv_req);
 double calc_center(const double *prev_func, double *curr_func, int layer_height, int offset);
-double calc_border(const double *prev_func, double *curr_func, double *up_border_layer, double *down_border_layer, 
-                 int layer_height, int offset, int proc_rank, int proc_count);
+double calc_border(const double *prev_func, double *curr_func, double *up_border_layer, double *down_border_layer,
+                   int layer_height, int offset, int proc_rank, int proc_count);
 double calc_max_diff(const double *func, int layer_height, int offset);
 
 int main(int argc, char **argv) {
@@ -75,6 +75,12 @@ int main(int argc, char **argv) {
     MPI_Request send_down_req;
     MPI_Request recv_up_req;
     MPI_Request recv_down_req;
+
+    // Check grid size
+    if (N_X < 3 || N_Y < 3 || N_Z < 3) {
+        fprintf(stderr, "Incorrect grid size\n");
+        return EXIT_FAILURE;
+    }
 
     MPI_Init(&argc, &argv);
 
@@ -119,7 +125,7 @@ int main(int argc, char **argv) {
             receive_layer(&send_down_req, &recv_down_req);
 
         // Calculate border
-        tmp_max_diff = calc_border(prev_func, curr_func, up_border_layer, down_border_layer, 
+        tmp_max_diff = calc_border(prev_func, curr_func, up_border_layer, down_border_layer,
                                    layer_heights[proc_rank], offsets[proc_rank], proc_rank, proc_count);
         proc_max_diff = fmax(tmp_max_diff, proc_max_diff);
 
@@ -159,7 +165,7 @@ double phi(double x, double y, double z) {
 
 /**
  * @brief Gets array index by coordinates of a point in a 3D area
- * 
+ *
  * @param x X-axis coordinate
  * @param y Y-axis coordinate
  * @param z Z-axis coordinate
@@ -171,9 +177,9 @@ int get_index(int x, int y, int z) {
 
 /**
  * @brief Gets coordinate of a point by node index for X axis
- * 
+ *
  * @param i Node index
- * @return X-axis coordinate 
+ * @return X-axis coordinate
  */
 double get_x(int i) {
     return X_0 + i * H_X;
@@ -181,9 +187,9 @@ double get_x(int i) {
 
 /**
  * @brief Gets coordinate of a point by node index for Y axis
- * 
+ *
  * @param j Node index
- * @return Y-axis coordinate 
+ * @return Y-axis coordinate
  */
 double get_y(int j) {
     return Y_0 + j * H_Y;
@@ -191,9 +197,9 @@ double get_y(int j) {
 
 /**
  * @brief Gets coordinate of a point by node index for Z axis
- * 
+ *
  * @param k Node index
- * @return Z-axis coordinate 
+ * @return Z-axis coordinate
  */
 double get_z(int k) {
     return Z_0 + k * H_Z;
@@ -201,7 +207,7 @@ double get_z(int k) {
 
 /**
  * @brief Divides area into layers
- * 
+ *
  * @param layer_heights Address of array of layer heights
  * @param offsets Address of array of layer offsets
  * @param proc_count Count of processes
@@ -222,7 +228,7 @@ void divide_area_into_layers(int *layer_heights, int *offsets, int proc_count) {
 
 /**
  * @brief Initializes the layers
- * 
+ *
  * @param prev_func Address of array of values of the previous calculated function
  * @param curr_func Address of array of values of the current calculated function
  * @param layer_height Height of the layer
@@ -232,8 +238,8 @@ void init_layers(double *prev_func, double *curr_func, int layer_height, int off
     for (int i = 0; i < layer_height; ++i)
         for (int j = 0; j < N_Y; j++)
             for (int k = 0; k < N_Z; k++) {
-                bool isBorder = (offset + i == 0) || (j == 0) || (k == 0) || 
-                    (offset + i == N_X - 1) || (j == N_Y - 1) || (k == N_Z - 1);
+                bool isBorder = (offset + i == 0) || (j == 0) || (k == 0) ||
+                                (offset + i == N_X - 1) || (j == N_Y - 1) || (k == N_Z - 1);
                 if (isBorder) {
                     prev_func[get_index(i, j, k)] = phi(get_x(offset + i), get_y(j), get_z(k));
                     curr_func[get_index(i, j, k)] = phi(get_x(offset + i), get_y(j), get_z(k));
@@ -245,9 +251,9 @@ void init_layers(double *prev_func, double *curr_func, int layer_height, int off
 }
 
 /**
- * @brief Swaps the address of the array of values of the previous calculated function and 
+ * @brief Swaps the address of the array of values of the previous calculated function and
  *        the address of the array of values of the current calculated function
- * 
+ *
  * @param prev_func Address of address of array of values of the previous calculated function
  * @param curr_func Address of address of array of values of the current calculated function
  */
@@ -259,7 +265,7 @@ void swap_func(double **prev_func, double **curr_func) {
 
 /**
  * @brief Sends up the layer
- * 
+ *
  * @param send_layer Address of send layer
  * @param recv_layer Address of receive layer
  * @param proc_rank Rank of process
@@ -273,7 +279,7 @@ void send_up_layer(const double *send_layer, double *recv_layer, int proc_rank, 
 
 /**
  * @brief Sends down the layer
- * 
+ *
  * @param send_layer Address of send layer
  * @param recv_layer Address of receive layer
  * @param proc_rank Rank of process
@@ -287,7 +293,7 @@ void send_down_layer(const double *send_layer, double *recv_layer, int proc_rank
 
 /**
  * @brief Waits for the layers to be sent
- * 
+ *
  * @param send_req Pointer to the handle of sending operations
  * @param recv_req Pointer to the handle of receiving operations
  */
@@ -298,7 +304,7 @@ void receive_layer(MPI_Request *send_req, MPI_Request *recv_req) {
 
 /**
  * @brief Calculate function values in internal nodes
- * 
+ *
  * @param prev_func Address of array of values of the previous calculated function
  * @param curr_func Address of array of values of the current calculated function
  * @param layer_height Height of the layer
@@ -332,8 +338,8 @@ double calc_center(const double *prev_func, double *curr_func, int layer_height,
 }
 
 /**
- * @brief 
- * 
+ * @brief
+ *
  * @param prev_func Address of array of values of the previous calculated function
  * @param curr_func Address of array of values of the current calculated function
  * @param up_border_layer Address of array of values of the upper border
@@ -389,7 +395,7 @@ double calc_border(const double *prev_func, double *curr_func, double *up_border
 
 /**
  * @brief Calculate the maximum differences of the calculated and theoretical functions
- * 
+ *
  * @param curr_func Address of array of values of the current calculated function
  * @param layer_height Height of the layer
  * @param offset Offset of the layer
