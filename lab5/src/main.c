@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "color.h"
-#include "task.h"
+#include "task_queue.h"
 
 #define TASK_COUNT              2000
 #define REQUEST_TAG             0

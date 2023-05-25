@@ -1,5 +1,5 @@
-#ifndef TASK_H
-#define TASK_H
+#ifndef TASK_QUEUE_H
+#define TASK_QUEUE_H
 
 #include <stdbool.h>
 
@@ -21,4 +21,4 @@ int task_queue_push(struct task_queue_t *queue, struct task_t task);
 int task_queue_pop(struct task_queue_t *queue, struct task_t *task);
 void task_queue_destroy(struct task_queue_t **queue);
 
-#endif // TASK_H
+#endif // TASK_QUEUE_H
