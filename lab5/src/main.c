@@ -65,10 +65,10 @@ int main(int argc, char *argv[]) {
 
     // Print result
     MPI_Barrier(MPI_COMM_WORLD);
-    printf(FGREEN"Summary weight %d: %lf\n", process_id, proc_sum_weight * 1E-6);
+    printf(FGREEN"Summary weight %d: %lf\n"FNORM, process_id, proc_sum_weight * 1E-6);
     MPI_Barrier(MPI_COMM_WORLD);
     if (process_id == 0) {
-        printf(FGREEN"Time: %lf\n", end_time - start_time);
+        printf(FGREEN"Time: %lf\n"FNORM, end_time - start_time);
     }
 
     // Clear resources
