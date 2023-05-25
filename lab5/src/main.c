@@ -175,10 +175,19 @@ void *receiver_start(void *args) {
 
             printf(FYELLOW"Receiver %d sent request to process %d\n"FNORM, process_id, i);
             MPI_Send(&process_id, 1, MPI_INT, i, REQUEST_TAG, MPI_COMM_WORLD);
-            MPI_Recv(&task, sizeof(task), MPI_BYTE, i, RESPONSE_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&task,
+                     sizeof(task),
+                     MPI_BYTE,
+                     i,
+                     RESPONSE_TAG,
+                     MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE);
 
             if (task.id != EMPTY_QUEUE_RESPONSE) {
-                printf(FYELLOW"Receiver %d received task %d from process %d\n"FNORM, process_id, task.id, i);
+                printf(FYELLOW"Receiver %d received task %d from process %d\n"FNORM,
+                       process_id,
+                       task.id,
+                       i);
 
                 pthread_mutex_lock(&mutex);
                 task_queue_push(task_queue, task);
@@ -186,7 +195,9 @@ void *receiver_start(void *args) {
 
                 received_tasks++;
             } else {
-                printf(FYELLOW"Receiver %d received empty queue response from process %d\n"FNORM, process_id, i);
+                printf(FYELLOW"Receiver %d received empty queue response from process %d\n"FNORM,
+                       process_id,
+                       i);
             }
         }
 
@@ -217,14 +228,22 @@ void *sender_start(void *args) {
         struct task_t task;
 
         printf(FMAGENTA"Sender %d waiting for request\n"FNORM, process_id);
-        MPI_Recv(&receive_process_id, 1, MPI_INT, MPI_ANY_SOURCE, REQUEST_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(&receive_process_id,
+                 1,
+                 MPI_INT,
+                 MPI_ANY_SOURCE,
+                 REQUEST_TAG,
+                 MPI_COMM_WORLD,
+                 MPI_STATUS_IGNORE);
 
         if (receive_process_id == TERMINATION_SIGNAL) {
             printf(FMAGENTA"Sender %d received termination signal\n"FNORM, process_id);
             break;
         }
 
-        printf(FMAGENTA"Sender %d received request from process %d\n"FNORM, process_id, receive_process_id);
+        printf(FMAGENTA"Sender %d received request from process %d\n"FNORM,
+               process_id,
+               receive_process_id);
 
         pthread_mutex_lock(&mutex);
         if (!task_queue_is_empty(task_queue)) {
@@ -238,7 +257,9 @@ void *sender_start(void *args) {
             task.id = EMPTY_QUEUE_RESPONSE;
             task.weight = 0;
             task.process_id = process_id;
-            printf(FMAGENTA"Sender %d sent empty queue response to process %d\n"FNORM, process_id, receive_process_id);
+            printf(FMAGENTA"Sender %d sent empty queue response to process %d\n"FNORM,
+                   process_id,
+                   receive_process_id);
         }
         pthread_mutex_unlock(&mutex);
 
