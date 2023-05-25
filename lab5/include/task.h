@@ -1,10 +1,10 @@
-#ifndef TASK_QUEUE_H
-#define TASK_QUEUE_H
+#ifndef TASK_H
+#define TASK_H
 
 #include <stdbool.h>
 
-#define SUCCESS 0
-#define ERROR (-1)
+#define SUCCESS         0
+#define ERROR           (-1)
 
 struct task_t {
     int id;
@@ -21,4 +21,4 @@ int task_queue_push(struct task_queue_t *queue, struct task_t task);
 int task_queue_pop(struct task_queue_t *queue, struct task_t *task);
 void task_queue_destroy(struct task_queue_t **queue);
 
-#endif // TASK_QUEUE_H
+#endif // TASK_H

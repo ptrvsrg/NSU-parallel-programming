@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "color.h"
-#include "task_queue.h"
+#include "task.h"
 
 #define LISTS_COUNT             2
 #define QUEUE_CAPACITY          10
