@@ -23,10 +23,7 @@ jobs:
         run: bash build.sh
       - name: Run
         working-directory: lab5/scripts
-        run: bash run.sh ${{ matrix.MPI_NP }} > ../logs/cluster_${{ matrix.MPI_NP }}.log
-      - name: Get results
-        working-directory: lab5/scripts
-        run: bash get_time.sh ${{ matrix.MPI_NP }}
+        run: bash run.sh ${{ matrix.MPI_NP }}
       - name: Clean
         working-directory: lab5
         run: rm -rf build logs/cluster_${{ matrix.MPI_NP }}.log
