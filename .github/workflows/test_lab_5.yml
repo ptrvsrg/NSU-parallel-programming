@@ -18,12 +18,15 @@ jobs:
         uses: mpi4py/setup-mpi@v1
         with:
           mpi: ${{ matrix.mpi }}
-      - name: Build and Run
+      - name: Build
         working-directory: lab5/scripts
-        run: bash test.sh
+        run: bash build.sh
+      - name: Run
+        working-directory: lab5/scripts
+        run: bash run.sh ${{ matrix.MPI_NP }} > ../logs/cluster_${{ matrix.MPI_NP }}.log
       - name: Get results
         working-directory: lab5/scripts
-        run: bash get_time.sh
+        run: bash get_time.sh ${{ matrix.MPI_NP }}
       - name: Clean
         working-directory: lab5
-        run: rm -rf build logs/cluster_*
+        run: rm -rf build logs/cluster_${{ matrix.MPI_NP }}.log
