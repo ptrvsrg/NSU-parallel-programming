@@ -5,4 +5,4 @@ if [ $# -ne 1 ]; then
 	exit 1
 fi
 
-mpiexec -np="$1" build/cluster
+mpiexec -np="$1" ../build/cluster
