@@ -1,9 +1,11 @@
 #!/bin/bash
 
-for (( i = 1; i <= 12; ++i ))
-do
-	echo "MPI process count: $i"
-	cat cluster_$i.log | grep "Time"
-	cat cluster_$i.log | grep "Summary weight"
-	echo
-done
+if [ $# -ne 1 ]; then
+	echo "USAGE: run.sh <MPI process count>"
+	exit 1
+fi
+
+echo "MPI process count: $1"
+cat cluster_$1.log | grep "Time"
+cat cluster_$1.log | grep "Summary weight"
+echo
