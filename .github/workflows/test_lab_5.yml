@@ -5,7 +5,7 @@ on:
   push:
 
 jobs:
-  test_lab_4:
+  test_lab_5:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
