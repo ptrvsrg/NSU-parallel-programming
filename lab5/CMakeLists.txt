@@ -5,6 +5,7 @@ project(cluster C)
 find_package(MPI REQUIRED)
 find_package(Threads REQUIRED)
 
+# Add task queue library
 add_library(task_queue STATIC src/task_queue.c)
 target_include_directories(task_queue
         PUBLIC include)
@@ -17,3 +18,13 @@ target_link_libraries(cluster
         PUBLIC task_queue
         PUBLIC MPI::MPI_C
         PUBLIC Threads::Threads)
+
+# Tests
+enable_testing()
+set(MPI_NP 2 4 8 16)
+
+foreach (MPI_NP ${MPI_NP})
+    add_test(
+            NAME test_mpi_np_${MPI_NP}
+            COMMAND mpiexec -np ${MPI_NP} ./cluster)
+endforeach (MPI_NP)
