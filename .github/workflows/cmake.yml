@@ -1,0 +1,32 @@
+name: CMake
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        LAB: [ lab1, lab2, lab3, lab4, lab5]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3   
+      
+    - name: Setup MPI
+      uses: mpi4py/setup-mpi@v1
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build_${{ matrix.LAB }} -S ${{github.workspace}}/${{ matrix.LAB }}
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build_${{ matrix.LAB }} --target all
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build_${{ matrix.LAB }}
+      run: ctest --extra-verbose
