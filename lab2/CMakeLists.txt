@@ -30,12 +30,19 @@ target_link_libraries(openmp_slae_schedule
 
 # Tests
 enable_testing()
-set(OMP_NUM_THREADS 1 2 4 8 16)
+
+# Set environment variables
 set(SCHEDULE_TYPE static dynamic guided)
 set(SCHEDULE_CHUNK_SIZE 0 100 200 400 800)
 
+if(DEFINED ENV{OMP_NUM_THREADS})
+    set(OMP_NUM_THREADS $ENV{OMP_NUM_THREADS})
+else ()
+    set(OMP_NUM_THREADS 1)
+endif ()
+
 # Tests for version 1
-foreach (OMP_NUM_THREADS ${OMP_NUM_THREADS})
+foreach(OMP_NUM_THREADS RANGE 1 ${OMP_NUM_THREADS})
     add_test(
             NAME test_version_1_omp_num_threads_${OMP_NUM_THREADS}
             COMMAND ./openmp_slae_1)
@@ -45,7 +52,7 @@ foreach (OMP_NUM_THREADS ${OMP_NUM_THREADS})
 endforeach (OMP_NUM_THREADS)
 
 # Tests for version 2
-foreach (OMP_NUM_THREADS ${OMP_NUM_THREADS})
+foreach(OMP_NUM_THREADS RANGE 1 ${OMP_NUM_THREADS})
     add_test(
             NAME test_version_2_omp_num_threads_${OMP_NUM_THREADS}
             COMMAND ./openmp_slae_2)
@@ -62,6 +69,6 @@ foreach (SCHEDULE_TYPE ${SCHEDULE_TYPE})
                 COMMAND ./openmp_slae_schedule)
         set_property(
                 TEST test_version_with_custom_schedule_${SCHEDULE_TYPE}_${SCHEDULE_CHUNK_SIZE}
-                PROPERTY ENVIRONMENT "OMP_NUM_THREADS=16;OMP_SCHEDULE=${SCHEDULE_TYPE},${SCHEDULE_CHUNK_SIZE}")
+                PROPERTY ENVIRONMENT "OMP_NUM_THREADS=${OMP_NUM_THREADS};OMP_SCHEDULE=${SCHEDULE_TYPE},${SCHEDULE_CHUNK_SIZE}")
     endforeach (SCHEDULE_CHUNK_SIZE)
 endforeach (SCHEDULE_TYPE)

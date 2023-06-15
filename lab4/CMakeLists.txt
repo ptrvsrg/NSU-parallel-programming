@@ -22,17 +22,23 @@ target_link_libraries(mpi_jacobi_2
 
 # Tests
 enable_testing()
-set(MPI_NP 1 2 4 8 16)
+
+# Set environment variable MPI_NP
+if(DEFINED ENV{MPI_NP})
+    set(MPI_NP $ENV{MPI_NP})
+else ()
+    set(MPI_NP 1)
+endif ()
 
 # Tests for version 1
-foreach (MPI_NP ${MPI_NP})
+foreach (MPI_NP RANGE 1 ${MPI_NP})
     add_test(
             NAME test_version_1_mpi_np_${MPI_NP}
             COMMAND mpiexec -np ${MPI_NP} ./mpi_jacobi_1)
 endforeach (MPI_NP)
 
 # Tests for version 2
-foreach (MPI_NP ${MPI_NP})
+foreach (MPI_NP RANGE 1 ${MPI_NP})
     add_test(
             NAME test_version_2_mpi_np_${MPI_NP}
             COMMAND mpiexec -np ${MPI_NP} ./mpi_jacobi_2)

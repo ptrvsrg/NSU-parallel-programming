@@ -21,9 +21,15 @@ target_link_libraries(cluster
 
 # Tests
 enable_testing()
-set(MPI_NP 2 4 8 16)
 
-foreach (MPI_NP ${MPI_NP})
+# Set environment variable MPI_NP
+if(DEFINED ENV{MPI_NP})
+    set(MPI_NP $ENV{MPI_NP})
+else ()
+    set(MPI_NP 2)
+endif ()
+
+foreach (MPI_NP RANGE 2 ${MPI_NP})
     add_test(
             NAME test_mpi_np_${MPI_NP}
             COMMAND mpiexec -np ${MPI_NP} ./cluster)

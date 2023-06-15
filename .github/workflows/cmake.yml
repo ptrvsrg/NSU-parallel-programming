@@ -21,6 +21,13 @@ jobs:
     - name: Setup MPI
       uses: mpi4py/setup-mpi@v1
 
+    - name: Set environment variables
+      run: |
+        export MPI_NP=$(cat /proc/cpuinfo | grep processor | wc --lines)
+        echo $MPI_NP
+        export OMP_NUM_THREADS=$(cat /proc/cpuinfo | grep processor | wc --lines)
+        echo $OMP_NUM_THREADS
+
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build_${{ matrix.LAB }} -S ${{github.workspace}}/${{ matrix.LAB }}
 

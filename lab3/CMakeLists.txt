@@ -13,11 +13,17 @@ target_link_libraries(mpi_multiply
 
 # Tests
 enable_testing()
-set(MPI_NP 1 2 4 8 16)
+
+# Set environment variables
 set(DIMS_X 1 2 4 8 16)
+if(DEFINED ENV{MPI_NP})
+    set(MPI_NP $ENV{MPI_NP})
+else ()
+    set(MPI_NP 1)
+endif ()
 
 # Tests for default grid
-foreach (MPI_NP ${MPI_NP})
+foreach (MPI_NP RANGE 1 ${MPI_NP})
     add_test(
             NAME test_default_grid_mpi_np_${MPI_NP}
             COMMAND mpiexec -np ${MPI_NP} ./mpi_multiply)
